@@ -1,0 +1,7 @@
+# Keep the image to just the server config and the published files.
+.git
+.github
+README.md
+LICENSE
+.gitignore
+.dockerignore
