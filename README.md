@@ -15,7 +15,9 @@ the files **are** the artifact, served by a bare nginx.
    infra/k8s/static/install.sh
    ```
 4. It's live:
-   - your page → `https://static.mseeks.me/cool-thing.html`
+   - your page → `https://static.mseeks.me/cool-thing` (the `.html` is optional —
+     nginx serves `cool-thing.html` for the extension-less URL; `…/cool-thing.html`
+     works too)
    - the root `/` **auto-lists** everything published (autoindex), so you never
      have to maintain an index.
 
