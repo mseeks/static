@@ -2,8 +2,7 @@ name: CI
 
 # Build the static-site image and push it to ghcr.io on every push to main.
 # There's no build/test step — the files under public/ are the artifact — so
-# this is just a docker build + push. The deploy (infra/k8s/static in the zo
-# workspace) pulls ghcr.io/mseeks/static:latest on its next rollout.
+# this is just a docker build + push.
 
 on:
   push:
@@ -33,5 +32,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/mseeks/static:latest
-            ghcr.io/mseeks/static:${{ github.sha }}
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
