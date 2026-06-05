@@ -1,0 +1,129 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ynab-agent &middot; ops</title><style>
+:root{--fg:#1a1a1a;--mut:#6b6b6b;--faint:#8a8a8a;--line:#e6e6e6;--bg:#fff;
+--ok:#1a7f37;--warn:#9a6700;--bad:#cf222e;--accent:#0969da;--card:#f6f8fa;
+--serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,ui-serif,serif}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e6e6;--mut:#9a9a9a;
+--faint:#7a7a7a;--line:#262626;--bg:#0d0d0d;--ok:#3fb950;--warn:#d29922;
+--bad:#f85149;--accent:#58a6ff;--card:#161b22}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:820px;margin:0 auto;padding:30px 20px 72px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.mut{color:var(--mut)}.faint{color:var(--faint)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.accent{color:var(--accent)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none;
+vertical-align:baseline}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}
+.dot.bad{background:var(--bad)}.dot.mute{background:var(--faint)}
+.dot.accent{background:var(--accent)}
+
+/* Masthead — wordmark + the one composite verdict + the few facts. */
+.mast{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.mast h1{font-size:19px;margin:0;letter-spacing:-.01em;font-weight:650}
+.mast .tag{color:var(--mut);font-size:12px;margin:2px 0 0}
+.verdict{display:inline-flex;align-items:center;gap:7px;font-weight:650;
+font-size:15px}
+.verdict .dot{width:11px;height:11px}
+.verdict.ok{color:var(--ok)}.verdict.warn{color:var(--warn)}
+.verdict.bad{color:var(--bad)}
+.facts{margin-left:auto;text-align:right;color:var(--mut);font-size:12px;
+line-height:1.7}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 0}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;
+border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:550}
+.chip.ok{border-color:transparent;color:var(--ok);
+background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.chip.warn{border-color:transparent;color:var(--warn);
+background:color-mix(in srgb,var(--warn) 16%,transparent)}
+.chip.bad{border-color:transparent;color:var(--bad);
+background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.srcs{display:flex;flex-wrap:wrap;gap:14px;margin:14px 0 0;font-size:11px;
+color:var(--mut)}
+.srcs .dot{margin-right:5px}
+
+/* Section = an 11px uppercase label with a hairline underline. */
+section{margin:30px 0 0}
+h2{font-size:11px;text-transform:uppercase;letter-spacing:.09em;
+color:var(--mut);margin:0 0 13px;font-weight:650;padding-bottom:6px;
+border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:8px}
+h2 .h2-aside{margin-left:auto;font-size:11px;font-weight:500;letter-spacing:0;
+text-transform:none;color:var(--faint)}
+
+/* State of things — the one serif voice, a lead with an accent rule. */
+.narr{border-left:3px solid var(--line);padding:2px 0 2px 15px;margin:26px 0 0}
+.narr.ok{border-color:var(--ok)}.narr.warn{border-color:var(--warn)}
+.narr.bad{border-color:var(--bad)}
+.narr .head{font-weight:650;font-size:15px;margin:0 0 4px}
+.narr .body{font-family:var(--serif);font-size:16.5px;line-height:1.5;
+margin:0;color:var(--fg);max-width:62ch}
+
+/* Needs you — the humanized queue. */
+.qrow{display:flex;align-items:baseline;gap:11px;padding:9px 0;
+border-bottom:1px solid var(--line)}
+.qrow:last-child{border-bottom:0}
+.qrow .dot{position:relative;top:1px}
+.q-main{flex:1;min-width:0}
+.q-title{display:block;font-weight:550;overflow-wrap:anywhere}
+.q-sub{display:block;color:var(--mut);font-size:12.5px;margin-top:1px}
+.q-age{color:var(--faint);font-size:12px;white-space:nowrap;
+font-variant-numeric:tabular-nums}
+.tag-pill{display:inline-block;padding:0 7px;border-radius:10px;
+font-size:10.5px;font-weight:650;text-transform:uppercase;letter-spacing:.04em;
+background:var(--card);color:var(--mut);vertical-align:1px}
+.tag-pill.offer{color:var(--accent);
+background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.empty{display:flex;align-items:center;gap:10px;color:var(--mut);
+font-size:14px;padding:6px 0}
+.empty .big{font-size:20px;line-height:1}
+.note{color:var(--mut);font-size:12.5px;margin:11px 0 0}
+
+/* Is it working — health pills + a single flow bar. */
+.kpis{display:flex;flex-wrap:wrap;gap:18px;margin:0 0 16px}
+.kpi{display:inline-flex;align-items:baseline;gap:7px;font-size:13px}
+.kpi b{font-weight:600}
+.flow{display:flex;height:22px;border-radius:5px;overflow:hidden;
+margin:4px 0 10px;background:var(--card)}
+.flow>span{display:block;min-width:2px}
+.legend{display:flex;flex-wrap:wrap;gap:7px 16px;font-size:12px;
+color:var(--mut)}
+.legend .it{display:inline-flex;align-items:baseline;gap:6px}
+.legend b{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* What it's done — the conversation feed. */
+.feed{display:flex;flex-direction:column}
+.frow{display:flex;align-items:baseline;gap:10px;padding:8px 0;
+border-bottom:1px solid var(--line)}
+.frow:last-child{border-bottom:0}
+.frow .g{width:1.2em;text-align:center;flex:none;color:var(--faint)}
+.f-main{flex:1;min-width:0}
+.f-title{display:block;overflow-wrap:anywhere}
+.f-prev{display:block;color:var(--faint);font-size:12px;margin-top:1px;
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.f-age{color:var(--faint);font-size:12px;white-space:nowrap}
+
+/* Budget — one tight line + overspent inline. */
+.over{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0 0;font-size:13px}
+.over .it{display:inline-flex;gap:6px}
+
+/* Rails — progressive disclosure, hairline-topped. */
+details.rail{border-top:1px solid var(--line);padding:9px 0 2px}
+details.rail>summary{cursor:pointer;list-style:none;display:flex;
+align-items:center;gap:8px;font-size:12px;color:var(--mut)}
+details.rail>summary::-webkit-details-marker{display:none}
+details.rail>summary::before{content:"\25B8";color:var(--faint);font-size:10px}
+details.rail[open]>summary::before{content:"\25BE"}
+details.rail>summary .rail-n{margin-left:auto;color:var(--faint)}
+.rail-body{padding:12px 0 6px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:5px 12px 5px 0;vertical-align:top;
+border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:600;font-size:10.5px;text-transform:uppercase;
+letter-spacing:.04em}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+footer{margin:40px 0 0;padding-top:15px;border-top:1px solid var(--line);
+color:var(--mut);font-size:12px;line-height:1.7}
+footer b{color:var(--fg);font-weight:600}
+</style></head><body><main><header><div class="mast"><div><h1>ynab-agent &middot; ops</h1><p class="tag">durable transaction triage &middot; earned-autonomy read-model</p></div><div class="facts"><span class="verdict ok"><span class="dot ok"></span>healthy</span><br>mseeks/ynab-agent<br>2026-06-05 23:40 UTC</div></div><div class="chips"><span class="chip warn">3 need you</span><span class="chip"><span class="dot ok"></span> poll 23m ago</span><span class="chip">1 unapproved</span><span class="chip bad">1 failure</span></div><div class="srcs"><span><span class="dot ok"></span>temporal <span class="faint">40 in-flight</span></span><span><span class="dot ok"></span>ynab <span class="faint">1 unapproved</span></span><span><span class="dot ok"></span>clickhouse <span class="faint">120870 spans</span></span><span><span class="dot ok"></span>agentmail <span class="faint">9 threads</span></span><span><span class="dot ok"></span>github <span class="faint">3 PRs</span></span></div></header><section class="narr ok"><p class="head">3 things waiting on you.</p><p class="body">You&#x27;re nearly caught up in YNAB (1 unapproved). The agent is tracking 40 transactions: 26 categorized and resting, 11 you already settled in YNAB, 3 waiting on your reply. It has applied 23 categories in the last 3 days and is learning (8 rules observed). The oldest reply has been waiting 2 days; the settled ones lapse on their own; 1 workflow failed recently — check Failures.</p></section><section><h2>Needs you<span class="h2-aside">oldest 2d ago</span></h2><div class="qrow"><span class="dot warn"></span><span class="q-main"><span class="q-title">Riverside Coffee — $-6.50 · ☕ Dining out?</span><span class="q-sub">$-6.50 &middot; Dining out</span></span><span class="q-age">14h ago</span></div><div class="qrow"><span class="dot warn"></span><span class="q-main"><span class="q-title">Metro Power &amp; Light — $-88.00 · ⚡ Utilities?</span><span class="q-sub">$-88.00 &middot; Utilities</span></span><span class="q-age">24h ago</span></div><div class="qrow"><span class="dot warn"></span><span class="q-main"><span class="q-title">Corner Pharmacy — $-23.10 · ❓ Uncategorized?</span><span class="q-sub">$-23.10</span></span><span class="q-age">2d ago</span></div><p class="note">11 more proposals you already settled in YNAB are winding down — they lapse on their own, no reply needed.</p></section><section><h2>Is it working?</h2><div class="kpis"><span class="kpi"><span class="dot ok"></span><b>poll</b> <span class="mut">running &middot; 23m ago</span></span><span class="kpi"><span class="dot ok"></span><b>worker</b> <span class="mut">span just now</span></span><span class="kpi"><span class="dot ok"></span><b>0.4%</b> <span class="mut">span errors</span></span></div><div class="flow"><span style="flex:14;background:var(--warn)" title="awaiting you: 14"></span><span style="flex:26;background:var(--ok)" title="resting (done): 26"></span></div><div class="legend"><span class="it"><span class="dot" style="background:var(--warn)"></span><b>14</b> awaiting you</span><span class="it"><span class="dot" style="background:var(--ok)"></span><b>26</b> resting (done)</span> &middot; <span class="faint">0 archived — the post-write window runs for weeks, so resting transactions haven't closed out yet</span></div></section><section><h2>What it's done<span class="h2-aside">recent threads</span></h2><div class="feed"><div class="frow"><span class="g">✉</span><span class="f-main"><span class="f-title">Riverside Coffee — $-6.50 · ☕ Dining out?</span><span class="f-prev">A quick note on this transaction.</span></span><span class="f-age">14h ago</span></div><div class="frow"><span class="g">✉</span><span class="f-main"><span class="f-title">Metro Power &amp; Light — $-88.00 · ⚡ Utilities?</span><span class="f-prev">A quick note on this transaction.</span></span><span class="f-age">24h ago</span></div><div class="frow"><span class="g">✉</span><span class="f-main"><span class="f-title">Corner Pharmacy — $-23.10 · ❓ Uncategorized?</span><span class="f-prev">A quick note on this transaction.</span></span><span class="f-age">2d ago</span></div><div class="frow"><span class="g">✉</span><span class="f-main"><span class="f-title">Streaming Plus — $-12.50 · 🗓 Subscriptions?</span><span class="f-prev">Done — set to the category you picked and approved.</span></span><span class="f-age">30m ago</span></div><div class="frow"><span class="g">✉</span><span class="f-main"><span class="f-title">Cloud Hosting Co — $-5.98 · 🗓 Subscriptions?</span><span class="f-prev">Done — set to the category you picked and approved.</span></span><span class="f-age">42m ago</span></div><div class="frow"><span class="g">✉</span><span class="f-main"><span class="f-title">Greenfield Grocers — $-72.40 · 🛒 Groceries?</span><span class="f-prev">Done — set to the category you picked and approved.</span></span><span class="f-age">2h ago</span></div><div class="frow"><span class="g">✉</span><span class="f-main"><span class="f-title">Paperback Books — $-19.99 · 🛍 Shopping?</span><span class="f-prev">A quick note on this transaction.</span></span><span class="f-age">3h ago</span></div><div class="frow"><span class="g">✉</span><span class="f-main"><span class="f-title">Acme Insurance — $-31.40 · 📄 Insurance?</span><span class="f-prev">Done — set to the category you picked and approved.</span></span><span class="f-age">9h ago</span></div><div class="frow"><span class="g">✉</span><span class="f-main"><span class="f-title">Bright Dental — $-60.00 · 💊 Health?</span><span class="f-prev">Done — set to the category you picked and approved.</span></span><span class="f-age">20h ago</span></div></div></section><section><h2>Budget &middot; YNAB<span class="h2-aside">1 unapproved · 3 overspent categories</span></h2><div class="over"><span class="it"><span class="bad mono">$-80.00</span> Dining out</span><span class="it"><span class="bad mono">$-33.05</span> Entertainment</span><span class="it"><span class="bad mono">$-2.90</span> Misc</span></div></section><details class="rail"><summary>Autonomy ladder<span class="rail-n">8 observe · 0 eligible · 0 blessed</span></summary><div class="rail-body"><table><thead><tr><th>payee</th><th>category</th><th>trust</th><th class='num'>hits</th></tr></thead><tbody><tr><td>Streaming Plus</td><td class="mut">Subscriptions</td><td class="warn">confirmed</td><td class="num">4</td></tr><tr><td>Cloud Hosting Co</td><td class="mut">Subscriptions</td><td class="warn">confirmed</td><td class="num">3</td></tr><tr><td>Metro Power &amp; Light</td><td class="mut">Utilities</td><td class="warn">confirmed</td><td class="num">2</td></tr><tr><td>Greenfield Grocers</td><td class="mut">Groceries</td><td class="warn">confirmed</td><td class="num">2</td></tr><tr><td>Rideshare</td><td class="mut">Transport</td><td class="warn">confirmed</td><td class="num">1</td></tr><tr><td>Acme Insurance</td><td class="mut">Insurance</td><td class="warn">confirmed</td><td class="num">1</td></tr><tr><td>City Transit</td><td class="mut">Transport</td><td class="warn">confirmed</td><td class="num">1</td></tr><tr><td>Sunrise Bakery</td><td class="mut">Dining out</td><td class="warn">confirmed</td><td class="num">1</td></tr></tbody></table><p class="note">Earned then granted: a rule becomes <b>eligible</b> after K consistent confirms, and <b>blessed</b> (auto-applies) only once you accept the offer. A correction demotes it to observe.</p></div></details><details class="rail"><summary>Run telemetry<span class="rail-n">120870 spans</span></summary><div class="rail-body"><p class="note">120870 spans &middot; 522 errored &middot; last just now &middot; 3-day window.</p><table><thead><tr><th>activity</th><th class='num'>runs</th><th class='num'>avg ms</th><th class='num'>max ms</th></tr></thead><tbody><tr><td class="mono">enrich</td><td class="num">545</td><td class="num mut">3563</td><td class="num mut">214483</td></tr><tr><td class="mono">address_transaction</td><td class="num">144</td><td class="num mut">21</td><td class="num mut">102</td></tr><tr><td class="mono">fetch_unapproved</td><td class="num">68</td><td class="num mut">331</td><td class="num mut">1070</td></tr><tr><td class="mono">send_thread_message</td><td class="num">23</td><td class="num mut">1243</td><td class="num mut">3234</td></tr><tr><td class="mono">interpret_inbound</td><td class="num">23</td><td class="num mut">87062</td><td class="num mut">326607</td></tr><tr><td class="mono">commit_to_ynab</td><td class="num">23</td><td class="num mut">139</td><td class="num mut">225</td></tr><tr><td class="mono">read_back</td><td class="num">23</td><td class="num mut">56</td><td class="num mut">83</td></tr><tr><td class="mono">resolve_thread</td><td class="num">23</td><td class="num mut">23</td><td class="num mut">79</td></tr><tr><td class="mono">signal_transaction</td><td class="num">22</td><td class="num mut">31</td><td class="num mut">132</td></tr><tr><td class="mono">open_thread</td><td class="num">22</td><td class="num mut">856</td><td class="num mut">1445</td></tr><tr><td class="mono">feed_rule_learning</td><td class="num">17</td><td class="num mut">15</td><td class="num mut">48</td></tr></tbody></table></div></details><details class="rail"><summary>Failures &amp; resets<span class="rail-n">1 real · 8 resets</span></summary><div class="rail-body"><table><thead><tr><th>workflow</th><th>kind</th><th>reason</th><th>when</th></tr></thead><tbody><tr><td class="mono">a1b2c3d4-0001</td><td class="bad">failed</td><td class="mut">Activity task timed out</td><td class="mut">14h ago</td></tr></tbody></table><p class="note">8 intentional go-live / re-test resets (housekeeping):</p><table><tbody><tr><td class="mono">reset-00</td><td class="mut">terminated</td><td class="mut">go-live reset</td><td class="mut">4d ago</td></tr><tr><td class="mono">reset-01</td><td class="mut">terminated</td><td class="mut">go-live reset</td><td class="mut">4d ago</td></tr><tr><td class="mono">reset-02</td><td class="mut">terminated</td><td class="mut">go-live reset</td><td class="mut">4d ago</td></tr><tr><td class="mono">reset-03</td><td class="mut">terminated</td><td class="mut">go-live reset</td><td class="mut">4d ago</td></tr><tr><td class="mono">reset-04</td><td class="mut">terminated</td><td class="mut">go-live reset</td><td class="mut">4d ago</td></tr><tr><td class="mono">reset-05</td><td class="mut">terminated</td><td class="mut">go-live reset</td><td class="mut">4d ago</td></tr><tr><td class="mono">reset-06</td><td class="mut">terminated</td><td class="mut">re-test cleanup</td><td class="mut">4d ago</td></tr><tr><td class="mono">reset-07</td><td class="mut">terminated</td><td class="mut">re-test fresh email</td><td class="mut">4d ago</td></tr></tbody></table></div></details><details class="rail"><summary>Inbound · W3 dispatch<span class="rail-n">0 retained</span></summary><div class="rail-body"><p class="note">0 inbound dispatches currently retained in Temporal (→ 0 transaction · 0 offer · 0 receipt · 0 command · 0 quarantined · 0 ignored). Replies are processed continuously; this panel only counts what Temporal still holds, so it reads low after retention ages dispatches out — the telemetry above is the fuller record.</p></div></details><details class="rail"><summary>Deploy · GitHub<span class="rail-n">3 PRs</span></summary><div class="rail-body"><table><thead><tr><th>pr</th><th>title</th><th>state</th><th>ci</th><th>opened</th></tr></thead><tbody><tr><td><a href="https://github.com/mseeks/ynab-agent/pull/12">#12</a></td><td>fix(dashboard): standard-visibility-safe Temporal reads</td><td class="ok">merged</td><td><span class="ok">passed</span></td><td class="mut">2h ago</td></tr><tr><td><a href="https://github.com/mseeks/ynab-agent/pull/11">#11</a></td><td>feat(dashboard): in-worker operations read-model (SPEC §15)</td><td class="ok">merged</td><td><span class="ok">passed</span></td><td class="mut">3h ago</td></tr><tr><td><a href="https://github.com/mseeks/ynab-agent/pull/10">#10</a></td><td>feat: earned-autonomy offer + safety guards</td><td class="ok">merged</td><td><span class="ok">passed</span></td><td class="mut">6h ago</td></tr></tbody></table></div></details><footer><b>Safety envelope.</b> Every auto-apply passes the hard floor (amount ceiling, unreadable amount, per-run/day breaker) and the earned-autonomy gate (exactly one blessed rule), then a clean-context model <b>safety review</b> that can only hold it back. Autonomy is revoked — the rule demoted — on an explicit correction or a silent in-YNAB edit. Everything above is derived on this request from Temporal, YNAB, ClickHouse, AgentMail, and GitHub; nothing is stored. Reload to recompute.</footer><p style="margin:24px 0 0;font-size:11px;color:var(--faint);text-align:center">Synthetic sample data — design preview only; no real financial information.</p></main></body></html>
