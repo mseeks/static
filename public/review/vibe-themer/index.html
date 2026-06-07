@@ -30,33 +30,34 @@
   <div class="wrap">
     <header>
       <h1>Vibe Themer — demo refinement options</h1>
-      <p>A refinement pass on the README demo, and the "pop as the paint front passes" idea you suggested. All three share the same refined motion; they differ only in the per-token pop.</p>
-      <p class="meta">Mock VS Code in HTML/CSS/JS &middot; deterministic, frame-stepped &middot; headless Chromium + ffmpeg &middot; 820&times;513 &middot; 15 fps &middot; ~3 MB each. Nothing here changes the shipped GIF.</p>
+      <p>The refined README demo with the "pop as the paint front passes" idea. All three share the same refined motion and the tightened, crisp chrome; they differ only in the per-token pop.</p>
+      <p class="meta">Mock VS Code in HTML/CSS/JS &middot; deterministic, frame-stepped &middot; headless Chromium + ffmpeg &middot; 820&times;513 &middot; 15 fps &middot; ~3 MB each.</p>
     </header>
     <p style="color:#9aa0b4;font-size:14px;max-width:760px">
-      <strong>What's new in the refinement</strong> (in all three): the recolor is now a <em>spatial paint wave</em> that sweeps top-to-bottom through the code (tokens recolor in document order, not by category); a brief <em>&ldquo;Analyzing your vibe&rdquo;</em> think-beat before color starts; the chrome (bars, background) settles first, then the code paints in; a downward light wipe synced to the wave; an editor caret for life; and smoother easing throughout.
+      <strong>Refinement</strong>: a <em>spatial paint wave</em> sweeping top-to-bottom through the code (tokens recolor in document order); a brief <em>&ldquo;Analyzing your vibe&rdquo;</em> think-beat; chrome settles first, then the code paints in; a downward light wipe; an editor caret; smoother easing.
+      <br/><strong>Chrome tighten</strong>: denser, authentic VS&nbsp;Code proportions — a compact explorer (folder + files), crisp monochrome line icons (no emoji), accent active-tab indicator, tighter line-height.
     </p>
     <hr />
     <div class="card">
       <h2>1 &middot; Refinement only <span class="tag alt">no pop</span></h2>
-      <p>The refined wave with a soft glow as each token lands &mdash; but no scale/lift. Calmest, most &ldquo;serious tool.&rdquo;</p>
+      <p>The wave with a soft landing glow, but no scale/lift. Calmest, most &ldquo;serious tool.&rdquo;</p>
       <img src="demo-refine.gif" alt="refinement only" loading="eager" />
     </div>
     <div class="card">
-      <h2>2 &middot; Refinement + pop <span class="tag rec">recommended</span></h2>
-      <p>Each token gently <em>lifts toward you</em>, scales a touch, and glows as the paint front reaches it. Lift-dominant, so adjacent tokens never collide. Lively but still tasteful.</p>
+      <h2>2 &middot; Refinement + pop <span class="tag rec">your pick · now in PR #25</span></h2>
+      <p>Each token gently <em>lifts toward you</em>, scales a touch, and glows as the paint front reaches it. Lift-dominant, so adjacent tokens never collide. This is the version now in the PR.</p>
       <img src="demo-pop.gif" alt="refinement plus pop" loading="eager" />
     </div>
     <div class="card">
       <h2>3 &middot; Refinement + bold pop <span class="tag alt">stronger</span></h2>
-      <p>Same idea, turned up &mdash; bigger lift, more scale and glow. More playful; reads clearly even at a glance.</p>
+      <p>Same idea, turned up — bigger lift, more scale and glow. More playful.</p>
       <img src="demo-popbold.gif" alt="refinement plus bold pop" loading="eager" />
     </div>
     <hr />
     <div class="card">
-      <h2>0 &middot; Currently shipped <span class="tag alt">for reference</span></h2>
-      <p>The version in PR&nbsp;#25 &mdash; category-by-category recolor, diagonal sweep, no per-token pop.</p>
-      <img src="demo-shipped.gif" alt="currently shipped demo" loading="lazy" />
+      <h2>0 &middot; Original first version <span class="tag alt">for reference</span></h2>
+      <p>Before the refinement + chrome tighten: category-by-category recolor, diagonal sweep, roomier sidebar, emoji icons.</p>
+      <img src="demo-shipped.gif" alt="original first version" loading="lazy" />
     </div>
   </div>
 </body>
