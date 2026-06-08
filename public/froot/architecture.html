@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>froot — execution architecture &amp; the loop-registry rework</title>
+<style>
+  :root{
+    --bg:#0a0d14; --panel:#0e121c; --line:#1e2636; --fg:#e6e9ef;
+    --mut:#93a0b4; --accent:#a78bfa; --accent2:#7c3aed;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg);
+    font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  .wrap{max-width:1180px;margin:0 auto;padding:48px 22px 96px}
+  header{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:34px}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:-.01em}
+  h2{font-size:20px;margin:54px 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--mut);font-size:14px;max-width:80ch}
+  .lead{color:var(--mut);max-width:82ch}
+  code{background:#141a28;border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font:13px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#cbd5e1}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:20px;margin-top:18px;overflow:auto}
+  .cap{color:var(--mut);font-size:13.5px;margin:2px 0 14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .ba{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;overflow:auto}
+  .ba h3{margin:0 0 2px;font-size:15px}
+  .ba h3 .t{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    padding:2px 8px;border-radius:999px;margin-right:8px;vertical-align:middle}
+  .before .t{background:#3a1620;color:#fecdd3;border:1px solid #7f1d2d}
+  .after  .t{background:#0e2a1c;color:#bbf7d0;border:1px solid #14532d}
+  .ba .why{color:var(--mut);font-size:13px;margin:2px 0 12px}
+  .diagram svg, .ba svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;color:var(--mut);font-size:12.5px;margin:10px 0 0}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:13px;height:13px;border-radius:3px;display:inline-block;border:1px solid #0006}
+  footer{color:var(--mut);font-size:12.5px;margin-top:60px;border-top:1px solid var(--line);padding-top:16px}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>froot — execution architecture</h1>
+    <p class="sub">How the durable Temporal workflows and their activities fan
+    out, and the through-line of PRs #16–#19: a single loop registry the spine,
+    the dashboard, and the starter all read instead of branching on the loop.</p>
+  </header>
+
+  <h2>1 · Workflows and their activity calls</h2>
+  <p class="lead">Every box that says <em>Workflow</em> is durable and replayable;
+  every leaf is an <code>@activity.defn</code> (all the I/O and nondeterminism
+  lives there). Edges read top-to-bottom in execution order — the labels are the
+  logic. Two families: the <b>acting</b> loops propose a PR a gate merges or
+  reverts; the <b>advisory</b> loops scan open PRs and upsert one decaying
+  comment, never a merge.</p>
+  <div class="legend">
+    <span><i class="sw" style="background:#15213b;border-color:#7c3aed"></i>workflow (durable)</span>
+    <span><i class="sw" style="background:#0f1830;border-color:#3b82f6"></i>activity (I/O)</span>
+    <span><i class="sw" style="background:#3a1620;border-color:#ef4444"></i>the merge gate</span>
+    <span><i class="sw" style="background:#0e2a1c;border-color:#22c55e"></i>pure, in-workflow</span>
+    <span>══ starts a workflow&nbsp;&nbsp;··· sleep / continue-as-new</span>
+  </div>
+  <div class="card"><div id="d1" class="diagram"></div></div>
+
+  <h2>2 · The rework (PRs #16–#19): one registry, not N branches</h2>
+  <p class="lead">The big picture. Before, the loop <em>enum</em> was a key every
+  consumer re-interpreted with its own per-loop branching — and the dashboard and
+  starter carried twin copies per family. After, each loop self-registers one
+  <code>LoopSpec</code> (a disposition-tagged union), and the spine, the
+  dashboard, and a single starter all <em>read</em> the registry.</p>
+  <div class="grid">
+    <div class="ba before">
+      <h3><span class="t">Before</span>branch on the loop, everywhere</h3>
+      <p class="why">Per-loop knowledge is copied across the spine, the
+      dashboard (two near-identical families), and three starter modules.</p>
+      <div id="d2"></div>
+    </div>
+    <div class="ba after">
+      <h3><span class="t">After</span>register once, read the registry</h3>
+      <p class="why">One spec per loop; the disposition (commit-or-revert vs
+      emit-signal) is derived from the tail's type. Adding a loop is a
+      registration, not an edit across the codebase.</p>
+      <div id="d3"></div>
+    </div>
+  </div>
+
+  <footer>
+    Rendered with Mermaid. froot — durable code-maintenance loops on Temporal.
+    Source of truth: the workflow definitions in <code>src/froot/workflow/</code>
+    and the registry in <code>src/froot/loops/registry.py</code>.
+  </footer>
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad:false, theme:'dark', securityLevel:'loose',
+  themeVariables:{ fontSize:'13px', fontFamily:'ui-sans-serif, system-ui, sans-serif' },
+  flowchart:{ htmlLabels:true, curve:'basis', nodeSpacing:42, rankSpacing:52 }
+});
+
+const d1 = `flowchart TD
+  classDef wf fill:#15213b,stroke:#7c3aed,stroke-width:2px,color:#e9e6ff;
+  classDef act fill:#0f1830,stroke:#3b82f6,color:#cbd5e1;
+  classDef gate fill:#3a1620,stroke:#ef4444,stroke-width:2px,color:#fecdd3;
+  classDef pure fill:#0e2a1c,stroke:#22c55e,color:#bbf7d0;
+  classDef entry fill:#2a2410,stroke:#f59e0b,stroke-width:2px,color:#fde68a;
+
+  starter["froot.starter · one-shot Job<br/>walks the registry, branches on disposition"]:::entry
+  starter -->|"each acting loop in FROOT_LOOPS × repo"| scan
+  starter -->|"determinism-review per repo (if enabled)"| review
+  starter -->|"a11y-review per repo (if enabled)"| a11y
+
+  subgraph ACT["ACTING · commit-or-revert"]
+    scan["ScanWorkflow<br/>durable loop · one tick per continue-as-new"]:::wf
+    scan -->|"checkout + the loop's observe → candidates"| sc["scan_candidates"]:::act
+    sc -->|"per candidate · idempotent per bump id"| db["dispatch_bump"]:::act
+    scan -->|"close PRs a newer target superseded (if loop reconciles)"| rec["reconcile_open_prs"]:::act
+    scan -->|"canary probe: the live gate still refuses known-bad"| gst["gate_selftest"]:::act
+    scan -. "sleep(interval), then continue_as_new" .-> scan
+    db ==>|"starts a child workflow"| bump["BumpWorkflow<br/>per (repo, package, target) · pure state machine"]:::wf
+    bump -->|"up front: has the class earned the auto-merge grant?"| ame["auto_merge_eligible"]:::act
+    ame -->|"JudgeChangelog"| jc["judge_changelog<br/>model verdict: clean / risky / unknown"]:::act
+    jc -->|"OpenPullRequest"| opr["open_pull_request<br/>open the PR on a froot/loop/… branch"]:::act
+    opr -->|"AwaitCi"| cci["check_ci<br/>durable poll until CI is terminal, or the deadline"]:::act
+    cci -->|"ReviewBump"| gr["gate_review<br/>★ THE MERGE GATE · earned autonomy + shadow gate"]:::gate
+    gr -->|"earned · clean · green"| mpr["merge_pull_request"]:::act
+    gr -->|"red CI (close_on_red)"| cpr["close_pull_request"]:::act
+    gr -. "held: advisory shadow gate, record only" .-> ro["record_outcome<br/>the terminal ledger row"]:::act
+    mpr --> ro
+    cpr --> ro
+  end
+
+  subgraph ADV["ADVISORY · emit-signal"]
+    review["ReviewWorkflow<br/>durable loop · one tick per continue-as-new"]:::wf
+    review -->|"list the repo's open PRs"| lrp["list_review_prs"]:::act
+    lrp -->|"per PR · idempotent per (PR, head SHA)"| dpr["dispatch_pr_review"]:::act
+    review -. "sleep, then continue_as_new" .-> review
+    dpr ==>|"starts"| prr["PrReviewWorkflow<br/>linear pipeline (advisory)"]:::wf
+    prr -->|"AST-walk the workflow surface → hazards + frontier"| apr["analyze_pr"]:::act
+    apr -->|"frontier present: model adjudicates each ambiguous call"| af["adjudicate_frontier"]:::act
+    apr -. "no frontier" .-> syn1
+    af --> syn1["synthesize_findings<br/>(pure, in the workflow)"]:::pure
+    syn1 -->|"upsert ONE decaying comment (true decay)"| pr1["post_review"]:::act
+
+    a11y["A11yReviewWorkflow<br/>durable loop · one tick per continue-as-new"]:::wf
+    a11y -->|"list the repo's open PRs (shared activity)"| lrp
+    a11y -->|"per PR · idempotent per (PR, head SHA)"| dpa["dispatch_pr_a11y_review"]:::act
+    a11y -. "sleep, then continue_as_new" .-> a11y
+    dpa ==>|"starts"| pra["PrA11yReviewWorkflow<br/>linear pipeline (advisory)"]:::wf
+    pra -->|"scan the changed Vue/JSX templates → candidates"| spa["scan_pr_a11y"]:::act
+    spa -->|"candidates present: model adjudicates each gap"| aa["adjudicate_a11y"]:::act
+    spa -. "no candidates" .-> syn2
+    aa --> syn2["synthesize_a11y_findings<br/>(pure, in the workflow)"]:::pure
+    syn2 -->|"upsert ONE decaying comment"| pa1["post_a11y_review"]:::act
+  end`;
+
+const d2 = `flowchart TD
+  classDef enum fill:#2a2410,stroke:#f59e0b,color:#fde68a,stroke-width:2px;
+  classDef branch fill:#0f1830,stroke:#64748b,color:#cbd5e1;
+  classDef bad fill:#3a1620,stroke:#ef4444,color:#fecdd3,stroke-width:2px;
+
+  enum["Loop enum<br/>just the key"]:::enum
+  enum -->|"match Loop"| a["activities<br/>per-loop branches:<br/>observe · title · judge · reconcile"]:::branch
+  enum -->|"match Loop"| j["model judge<br/>per-loop judge context"]:::branch
+  enum -->|"per family"| rm["dashboard read_model<br/>_review_* + _a11y_* · twin copies"]:::branch
+  enum -->|"per family"| rn["dashboard render<br/>_review_panel + _a11y_panel · twin copies"]:::branch
+  enum --> s1["scan_starter"]:::branch
+  enum --> s2["review_starter"]:::branch
+  enum --> s3["a11y_review_starter"]:::branch
+  a --> out["a new loop =<br/>edit every one of these sites"]:::bad
+  j --> out
+  rm --> out
+  rn --> out
+  s1 --> out
+  s2 --> out
+  s3 --> out`;
+
+const d3 = `flowchart TD
+  classDef loop fill:#0f1830,stroke:#64748b,color:#cbd5e1;
+  classDef reg fill:#15213b,stroke:#7c3aed,color:#e9e6ff,stroke-width:2px;
+  classDef reader fill:#0f1830,stroke:#3b82f6,color:#cbd5e1;
+  classDef good fill:#0e2a1c,stroke:#22c55e,color:#bbf7d0,stroke-width:2px;
+
+  l1["dependency_patch"]:::loop -->|"register"| reg
+  l2["security_patch"]:::loop -->|"register"| reg
+  l3["dead_code"]:::loop -->|"register"| reg
+  l4["determinism_review"]:::loop -->|"register"| reg
+  l5["a11y_review"]:::loop -->|"register"| reg
+  reg["loop registry · LoopSpec<br/>disposition-tagged union<br/>CommitTail / AdvisoryTail<br/>(disposition derived from the tail type)"]:::reg
+  reg -->|"commit_tail(loop)"| a["the spine / activities<br/>observe · title · judge · reconcile"]:::reader
+  reg -->|"all_specs() filtered to emit-signal"| d["the dashboard<br/>one AdvisoryView · icon + title from the spec"]:::reader
+  reg -->|"walk · branch on disposition"| s["froot.starter<br/>one starter, all five loops"]:::reader
+  a --> out["a new loop =<br/>one registered spec"]:::good
+  d --> out
+  s --> out`;
+
+const targets = { d1, d2, d3 };
+for (const [id, src] of Object.entries(targets)) {
+  try {
+    const { svg } = await mermaid.render(id + '-svg', src);
+    document.getElementById(id).innerHTML = svg;
+  } catch (e) {
+    document.getElementById(id).innerHTML =
+      '<pre style="color:#fca5a5;white-space:pre-wrap">' + String(e) + '</pre>';
+  }
+}
+</script>
+</body>
+</html>
