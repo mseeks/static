@@ -13,27 +13,33 @@
   html,body{margin:0;background:var(--bg);color:var(--fg);
     font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
   .wrap{max-width:1180px;margin:0 auto;padding:48px 22px 96px}
-  header{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:34px}
+  header{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:14px}
   h1{font-size:26px;margin:0 0 8px;letter-spacing:-.01em}
-  h2{font-size:20px;margin:54px 0 6px;letter-spacing:-.01em}
-  .sub{color:var(--mut);font-size:14px;max-width:80ch}
-  .lead{color:var(--mut);max-width:82ch}
+  h2{font-size:20px;margin:8px 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--mut);font-size:14px;max-width:82ch}
+  .lead{color:var(--mut);max-width:84ch}
   code{background:#141a28;border:1px solid var(--line);border-radius:5px;
     padding:1px 6px;font:13px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#cbd5e1}
+  section{margin-top:46px}
+  .head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
-    padding:20px;margin-top:18px;overflow:auto}
-  .cap{color:var(--mut);font-size:13.5px;margin:2px 0 14px}
+    padding:20px;margin-top:16px;overflow:auto}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
   @media (max-width:900px){.grid{grid-template-columns:1fr}}
-  .ba{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;overflow:auto}
-  .ba h3{margin:0 0 2px;font-size:15px}
-  .ba h3 .t{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  .ba{background:#0b0f18;border:1px solid var(--line);border-radius:12px;padding:16px;overflow:auto}
+  .ba h3{margin:0 0 2px;font-size:14px}
+  .ba h3 .t{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
     padding:2px 8px;border-radius:999px;margin-right:8px;vertical-align:middle}
   .before .t{background:#3a1620;color:#fecdd3;border:1px solid #7f1d2d}
   .after  .t{background:#0e2a1c;color:#bbf7d0;border:1px solid #14532d}
-  .ba .why{color:var(--mut);font-size:13px;margin:2px 0 12px}
-  .diagram svg, .ba svg{max-width:100%;height:auto;display:block;margin:0 auto}
-  .legend{display:flex;flex-wrap:wrap;gap:14px;color:var(--mut);font-size:12.5px;margin:10px 0 0}
+  .ba .why{color:var(--mut);font-size:12.5px;margin:2px 0 12px}
+  svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#0b0f18}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--mut);
+    padding:6px 14px;font:600 12.5px/1 inherit;cursor:pointer}
+  .seg button.on{background:var(--accent2);color:#fff}
+  .view[hidden]{display:none}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;color:var(--mut);font-size:12.5px;margin:12px 2px 0}
   .legend span{display:inline-flex;align-items:center;gap:6px}
   .sw{width:13px;height:13px;border-radius:3px;display:inline-block;border:1px solid #0006}
   footer{color:var(--mut);font-size:12.5px;margin-top:60px;border-top:1px solid var(--line);padding-top:16px}
@@ -44,53 +50,105 @@
 <div class="wrap">
   <header>
     <h1>froot — execution architecture</h1>
-    <p class="sub">How the durable Temporal workflows and their activities fan
-    out, and the through-line of PRs #16–#19: a single loop registry the spine,
-    the dashboard, and the starter all read instead of branching on the loop.</p>
+    <p class="sub">froot is a robot teammate that keeps software projects tidy on
+    its own. Below: what it does, and the through-line of a recent rework. Each
+    picture has a <b>Simple</b> view (no background needed) and a <b>Detailed</b>
+    view (the real workflows and code). Use the toggle on each.</p>
   </header>
 
-  <h2>1 · Workflows and their activity calls</h2>
-  <p class="lead">Every box that says <em>Workflow</em> is durable and replayable;
-  every leaf is an <code>@activity.defn</code> (all the I/O and nondeterminism
-  lives there). Edges read top-to-bottom in execution order — the labels are the
-  logic. Two families: the <b>acting</b> loops propose a PR a gate merges or
-  reverts; the <b>advisory</b> loops scan open PRs and upsert one decaying
-  comment, never a merge.</p>
-  <div class="legend">
-    <span><i class="sw" style="background:#15213b;border-color:#7c3aed"></i>workflow (durable)</span>
-    <span><i class="sw" style="background:#0f1830;border-color:#3b82f6"></i>activity (I/O)</span>
-    <span><i class="sw" style="background:#3a1620;border-color:#ef4444"></i>the merge gate</span>
-    <span><i class="sw" style="background:#0e2a1c;border-color:#22c55e"></i>pure, in-workflow</span>
-    <span>══ starts a workflow&nbsp;&nbsp;··· sleep / continue-as-new</span>
-  </div>
-  <div class="card"><div id="d1" class="diagram"></div></div>
+  <!-- ============ 1. What froot does ============ -->
+  <section>
+    <div class="head">
+      <h2>1 · What froot does</h2>
+      <div class="seg" data-seg="exec">
+        <button data-v="simple" class="on">Simple</button>
+        <button data-v="detailed">Detailed</button>
+      </div>
+    </div>
 
-  <h2>2 · The rework (PRs #16–#19): one registry, not N branches</h2>
-  <p class="lead">The big picture. Before, the loop <em>enum</em> was a key every
-  consumer re-interpreted with its own per-loop branching — and the dashboard and
-  starter carried twin copies per family. After, each loop self-registers one
-  <code>LoopSpec</code> (a disposition-tagged union), and the spine, the
-  dashboard, and a single starter all <em>read</em> the registry.</p>
-  <div class="grid">
-    <div class="ba before">
-      <h3><span class="t">Before</span>branch on the loop, everywhere</h3>
-      <p class="why">Per-loop knowledge is copied across the spine, the
-      dashboard (two near-identical families), and three starter modules.</p>
-      <div id="d2"></div>
+    <div class="view" data-section="exec" data-view="simple">
+      <p class="lead">froot watches a set of code repositories. On a schedule it
+      wakes up and does one of two things: <b>improve</b> the code (open a fix,
+      let it merge only if it's trusted and the tests pass) or <b>review</b>
+      other people's open changes (leave a helpful comment, never touch
+      anything).</p>
+      <div class="card"><div id="d1s"></div></div>
     </div>
-    <div class="ba after">
-      <h3><span class="t">After</span>register once, read the registry</h3>
-      <p class="why">One spec per loop; the disposition (commit-or-revert vs
-      emit-signal) is derived from the tail's type. Adding a loop is a
-      registration, not an edit across the codebase.</p>
-      <div id="d3"></div>
+
+    <div class="view" data-section="exec" data-view="detailed" hidden>
+      <p class="lead">Every box marked <em>Workflow</em> is a durable, replayable
+      Temporal workflow; every leaf is an <code>@activity.defn</code> (all the
+      I/O lives there). Edges read top-to-bottom in execution order — the labels
+      are the logic. Two families: <b>acting</b> loops propose a PR a gate merges
+      or reverts; <b>advisory</b> loops scan open PRs and upsert one decaying
+      comment.</p>
+      <div class="legend">
+        <span><i class="sw" style="background:#15213b;border-color:#7c3aed"></i>workflow (durable)</span>
+        <span><i class="sw" style="background:#0f1830;border-color:#3b82f6"></i>activity (I/O)</span>
+        <span><i class="sw" style="background:#3a1620;border-color:#ef4444"></i>the merge gate</span>
+        <span><i class="sw" style="background:#0e2a1c;border-color:#22c55e"></i>pure, in-workflow</span>
+        <span>══ starts a workflow&nbsp;&nbsp;··· sleep / continue-as-new</span>
+      </div>
+      <div class="card"><div id="d1"></div></div>
     </div>
-  </div>
+  </section>
+
+  <!-- ============ 2. The rework ============ -->
+  <section>
+    <div class="head">
+      <h2>2 · The rework (PRs #16–#19)</h2>
+      <div class="seg" data-seg="rework">
+        <button data-v="simple" class="on">Simple</button>
+        <button data-v="detailed">Detailed</button>
+      </div>
+    </div>
+
+    <div class="view" data-section="rework" data-view="simple">
+      <p class="lead">The change in one line: froot used to keep many separate
+      copies of "how each task works"; now every task is described once in a
+      single shared catalog, and everything else looks it up.</p>
+      <div class="grid">
+        <div class="ba before">
+          <h3><span class="t">Before</span>copies everywhere</h3>
+          <p class="why">The same know-how was repeated in many places.</p>
+          <div id="d2s"></div>
+        </div>
+        <div class="ba after">
+          <h3><span class="t">After</span>one shared catalog</h3>
+          <p class="why">Describe a task once; the rest just reads it.</p>
+          <div id="d3s"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" data-section="rework" data-view="detailed" hidden>
+      <p class="lead">The loop <em>enum</em> used to be a key every consumer
+      re-interpreted with its own per-loop branching, with the dashboard and
+      starter carrying twin copies per family. Now each loop self-registers one
+      <code>LoopSpec</code> (a disposition-tagged union), and the spine, the
+      dashboard, and a single starter all <em>read</em> the registry.</p>
+      <div class="grid">
+        <div class="ba before">
+          <h3><span class="t">Before</span>branch on the loop, everywhere</h3>
+          <p class="why">Per-loop knowledge copied across the spine, the
+          dashboard (two near-identical families), and three starter modules.</p>
+          <div id="d2"></div>
+        </div>
+        <div class="ba after">
+          <h3><span class="t">After</span>register once, read the registry</h3>
+          <p class="why">One spec per loop; the disposition (commit-or-revert vs
+          emit-signal) is derived from the tail's type. A new loop is a
+          registration, not edits across the codebase.</p>
+          <div id="d3"></div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <footer>
     Rendered with Mermaid. froot — durable code-maintenance loops on Temporal.
-    Source of truth: the workflow definitions in <code>src/froot/workflow/</code>
-    and the registry in <code>src/froot/loops/registry.py</code>.
+    Detailed views trace <code>src/froot/workflow/</code> and the registry in
+    <code>src/froot/loops/registry.py</code>.
   </footer>
 </div>
 
@@ -102,6 +160,32 @@ mermaid.initialize({
   flowchart:{ htmlLabels:true, curve:'basis', nodeSpacing:42, rankSpacing:52 }
 });
 
+/* ---------- SIMPLE: what froot does ---------- */
+const d1s = `flowchart TD
+  classDef timer fill:#2a2410,stroke:#f59e0b,color:#fde68a,stroke-width:2px;
+  classDef fix fill:#0f1830,stroke:#3b82f6,color:#dbeafe;
+  classDef adv fill:#15213b,stroke:#a78bfa,color:#ede9fe;
+  classDef good fill:#0e2a1c,stroke:#22c55e,color:#bbf7d0,stroke-width:2px;
+  classDef stop fill:#3a1620,stroke:#ef4444,color:#fecdd3;
+  classDef ask fill:#0b1220,stroke:#94a3b8,color:#e2e8f0;
+
+  t["⏰ On a schedule, for each code project,<br/>froot wakes itself up — again and again, forever"]:::timer
+  t --> fix["🔧 Improve the code"]:::fix
+  t --> adv["💬 Review open changes"]:::adv
+
+  fix --> f1["Find something worth fixing<br/>(e.g. an out-of-date dependency)"]:::fix
+  f1 --> f2["Open a pull request with the fix"]:::fix
+  f2 --> f3["Wait for the project's tests to run"]:::fix
+  f3 --> q{"Tests pass AND this kind of<br/>fix has earned trust?"}:::ask
+  q -->|"yes"| m["✅ Merge it automatically"]:::good
+  q -->|"no"| h["🚫 Close it, or leave it for a human"]:::stop
+
+  adv --> v1["Look at each open pull request"]:::adv
+  v1 --> v2["Spot likely problems in the changes"]:::adv
+  v2 --> v3["💬 Leave one helpful comment"]:::adv
+  v3 --> v4["Only advises — never merges or blocks"]:::adv`;
+
+/* ---------- DETAILED: workflows + activities ---------- */
 const d1 = `flowchart TD
   classDef wf fill:#15213b,stroke:#7c3aed,stroke-width:2px,color:#e9e6ff;
   classDef act fill:#0f1830,stroke:#3b82f6,color:#cbd5e1;
@@ -158,6 +242,36 @@ const d1 = `flowchart TD
     syn2 -->|"upsert ONE decaying comment"| pa1["post_a11y_review"]:::act
   end`;
 
+/* ---------- SIMPLE: before ---------- */
+const d2s = `flowchart TD
+  classDef key fill:#2a2410,stroke:#f59e0b,color:#fde68a,stroke-width:2px;
+  classDef place fill:#0f1830,stroke:#64748b,color:#cbd5e1;
+  classDef pain fill:#3a1620,stroke:#ef4444,color:#fecdd3,stroke-width:2px;
+
+  k["The kinds of tasks froot can do"]:::key
+  k --> p1["Place 1 keeps its own copy<br/>of how every task works"]:::place
+  k --> p2["Place 2 — another copy"]:::place
+  k --> p3["Place 3 — another copy"]:::place
+  k --> p4["…and several more places"]:::place
+  p1 --> pain["😫 Adding one new task means<br/>editing every place by hand —<br/>easy to miss one"]:::pain
+  p2 --> pain
+  p3 --> pain
+  p4 --> pain`;
+
+/* ---------- SIMPLE: after ---------- */
+const d3s = `flowchart TD
+  classDef task fill:#0f1830,stroke:#64748b,color:#cbd5e1;
+  classDef cat fill:#15213b,stroke:#7c3aed,color:#e9e6ff,stroke-width:2px;
+  classDef read fill:#0f1830,stroke:#3b82f6,color:#cbd5e1;
+  classDef win fill:#0e2a1c,stroke:#22c55e,color:#bbf7d0,stroke-width:2px;
+
+  t1["Task A describes itself once"]:::task --> c["📒 One shared catalog<br/>every task, described in one place"]:::cat
+  t2["Task B"]:::task --> c
+  t3["Task C"]:::task --> c
+  c --> r["Everywhere else just<br/>looks tasks up in the catalog"]:::read
+  r --> w["😀 Adding a new task means<br/>describing it once — done"]:::win`;
+
+/* ---------- DETAILED: before ---------- */
 const d2 = `flowchart TD
   classDef enum fill:#2a2410,stroke:#f59e0b,color:#fde68a,stroke-width:2px;
   classDef branch fill:#0f1830,stroke:#64748b,color:#cbd5e1;
@@ -179,6 +293,7 @@ const d2 = `flowchart TD
   s2 --> out
   s3 --> out`;
 
+/* ---------- DETAILED: after ---------- */
 const d3 = `flowchart TD
   classDef loop fill:#0f1830,stroke:#64748b,color:#cbd5e1;
   classDef reg fill:#15213b,stroke:#7c3aed,color:#e9e6ff,stroke-width:2px;
@@ -198,16 +313,31 @@ const d3 = `flowchart TD
   d --> out
   s --> out`;
 
-const targets = { d1, d2, d3 };
+const targets = { d1s, d1, d2s, d3s, d2, d3 };
 for (const [id, src] of Object.entries(targets)) {
+  const host = document.getElementById(id);
+  if (!host) continue;
   try {
     const { svg } = await mermaid.render(id + '-svg', src);
-    document.getElementById(id).innerHTML = svg;
+    host.innerHTML = svg;
   } catch (e) {
-    document.getElementById(id).innerHTML =
-      '<pre style="color:#fca5a5;white-space:pre-wrap">' + String(e) + '</pre>';
+    host.innerHTML = '<pre style="color:#fca5a5;white-space:pre-wrap">' + String(e) + '</pre>';
   }
 }
+
+// Per-section Simple/Detailed toggle.
+document.querySelectorAll('.seg').forEach(seg => {
+  const name = seg.getAttribute('data-seg');
+  seg.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.getAttribute('data-v');
+      seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn));
+      document.querySelectorAll('.view[data-section="' + name + '"]').forEach(view => {
+        view.hidden = view.getAttribute('data-view') !== v;
+      });
+    });
+  });
+});
 </script>
 </body>
 </html>
