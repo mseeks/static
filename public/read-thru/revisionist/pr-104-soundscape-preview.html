@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revisionist — soundscape preview (PR #104)</title>
+<style>
+  :root{
+    --fg:#2b241c; --mut:#685c49; --faint:#7d6f57; --hair:#c9b99c; --line:#e6dcc8;
+    --bg:#faf6ee; --tint:#f1ebdd; --accent:#b1532e; --ok:#466632; --warn:#8a5a16; --bad:#7c2d26;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,ui-serif,serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:860px;margin:0 auto;padding:32px 20px 80px;}
+  h1{font-family:var(--serif);font-weight:600;font-size:30px;margin:0 0 6px;}
+  h1 .q{color:var(--accent);}
+  .sub{color:var(--mut);margin:0 0 20px;max-width:60ch;}
+  .bar{position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg),var(--bg) 70%,transparent);
+    padding:12px 0 14px;margin-bottom:8px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;}
+  .vol{display:flex;align-items:center;gap:10px;}
+  .vol label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:600;color:var(--mut);}
+  input[type=range]{width:160px;accent-color:var(--accent);}
+  .hint{font-size:12px;color:var(--faint);}
+  .grp{margin:26px 0 4px;}
+  .grp > h2{font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;color:var(--mut);
+    border-bottom:1px solid var(--line);padding-bottom:6px;margin:0 0 14px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+  button.cue{appearance:none;text-align:left;background:var(--tint);color:var(--fg);border:1px solid var(--line);
+    border-radius:4px;padding:11px 13px;cursor:pointer;transition:border-color .14s,transform .08s,background .14s;}
+  button.cue:hover{border-color:var(--fg);}
+  button.cue:active{transform:scale(.985);}
+  button.cue .n{font-weight:600;display:block;}
+  button.cue .d{font-size:12px;color:var(--mut);margin-top:2px;display:block;}
+  button.cue.demo{background:transparent;border-color:var(--accent);}
+  button.cue.demo .n{color:var(--accent);}
+  button.cue.live{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 22%,transparent);}
+  .seal{color:var(--accent);}
+  footer{margin-top:40px;color:var(--faint);font-size:12px;border-top:1px solid var(--line);padding-top:14px;}
+  a{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>The Revisionist soundscape <span class="q">✒</span></h1>
+  <p class="sub">The actual game cues, synthesized in your browser — the same Web Audio code that ships in PR&nbsp;#104 (no audio files anywhere). Click any cue to hear it. Each is short, tactile, and analog by design; in the game they fire on the matching beat and never chatter.</p>
+
+  <div class="bar">
+    <div class="vol">
+      <label for="vol">Volume</label>
+      <input id="vol" type="range" min="0" max="1" step="0.01" value="0.8">
+    </div>
+    <span class="hint" id="status">Click a cue to start audio.</span>
+  </div>
+
+  <div id="board"></div>
+
+  <footer>
+    Revisionist · issue #92 · <a href="https://github.com/mseeks/revisionist/pull/104">PR #104</a> ·
+    <a href="/read-thru/revisionist/pr-104-tactile-soundscape">code-level read-thru</a><br>
+    Tip: turn it up a touch — the cues are mixed low on purpose so none is jarring in play.
+  </footer>
+</div>
+
+<script>
+"use strict";
+// ── Synthesis, ported verbatim from utils/sfx.ts ─────────────────────────────
+const FLOOR = 0.0001;
+const noiseCache = new WeakMap();
+function noiseBuffer(ctx){
+  const cached = noiseCache.get(ctx); if (cached) return cached;
+  const sr = ctx.sampleRate || 44100;
+  const buf = ctx.createBuffer(1, Math.max(1, Math.floor(sr * 1.2)), sr);
+  const data = buf.getChannelData(0);
+  let s = 0x2545f491;
+  for (let i=0;i<data.length;i++){ s ^= s<<13; s ^= s>>>17; s ^= s<<5; data[i] = ((s>>>0)/0xffffffff)*2-1; }
+  noiseCache.set(ctx, buf); return buf;
+}
+function tone(ctx, out, t0, o){
+  const start = t0 + (o.delay ?? 0);
+  const osc = ctx.createOscillator();
+  osc.type = o.type ?? 'sine';
+  osc.frequency.setValueAtTime(o.f0, start);
+  if (o.f1 != null && o.f1 !== o.f0) osc.frequency.exponentialRampToValueAtTime(Math.max(1, o.f1), start + o.dur);
+  if (o.detune) osc.detune.setValueAtTime(o.detune, start);
+  const g = ctx.createGain();
+  const attack = o.attack ?? 0.005;
+  g.gain.setValueAtTime(FLOOR, start);
+  g.gain.exponentialRampToValueAtTime(o.peak, start + attack);
+  g.gain.exponentialRampToValueAtTime(FLOOR, start + o.dur);
+  osc.connect(g); g.connect(out);
+  osc.start(start); osc.stop(start + o.dur + 0.05);
+}
+function noise(ctx, out, t0, o){
+  const start = t0 + (o.delay ?? 0);
+  const src = ctx.createBufferSource();
+  src.buffer = noiseBuffer(ctx); src.loop = true;
+  const filter = ctx.createBiquadFilter();
+  filter.type = o.type ?? 'bandpass';
+  filter.frequency.setValueAtTime(o.freq, start);
+  if (o.freqTo != null && o.freqTo !== o.freq) filter.frequency.exponentialRampToValueAtTime(Math.max(1, o.freqTo), start + o.dur);
+  filter.Q.setValueAtTime(o.q ?? 1, start);
+  const g = ctx.createGain();
+  const attack = o.attack ?? 0.004;
+  g.gain.setValueAtTime(FLOOR, start);
+  g.gain.exponentialRampToValueAtTime(o.peak, start + attack);
+  g.gain.exponentialRampToValueAtTime(FLOOR, start + o.dur);
+  src.connect(filter); filter.connect(g); g.connect(out);
+  src.start(start); src.stop(start + o.dur + 0.05);
+}
+const SFX = {
+  dispatch:(c,o,t)=>{ noise(c,o,t,{type:'bandpass',freq:1900,freqTo:360,q:0.8,dur:0.34,peak:0.16,attack:0.05}); tone(c,o,t,{type:'sine',f0:520,f1:230,dur:0.3,peak:0.05}); },
+  diceLand:(c,o,t,i=1)=>{ const peak=0.28*i; tone(c,o,t,{type:'triangle',f0:168,f1:68,dur:0.18,peak,attack:0.002}); noise(c,o,t,{type:'highpass',freq:2600,q:0.6,dur:0.035,peak:0.12*i,attack:0.001}); },
+  outcomeCritSuccess:(c,o,t)=>{ tone(c,o,t,{type:'triangle',f0:523,dur:0.16,peak:0.16,delay:0}); tone(c,o,t,{type:'triangle',f0:659,dur:0.16,peak:0.16,delay:0.09}); tone(c,o,t,{type:'triangle',f0:784,dur:0.28,peak:0.18,delay:0.18}); tone(c,o,t,{type:'sine',f0:1568,dur:0.22,peak:0.06,delay:0.18,attack:0.01}); },
+  outcomeSuccess:(c,o,t)=>{ tone(c,o,t,{type:'triangle',f0:587,f1:784,dur:0.22,peak:0.14}); },
+  outcomeNeutral:(c,o,t)=>{ tone(c,o,t,{type:'sine',f0:320,dur:0.1,peak:0.05}); },
+  outcomeFailure:(c,o,t)=>{ tone(c,o,t,{type:'triangle',f0:330,f1:220,dur:0.26,peak:0.13}); },
+  outcomeCritFailure:(c,o,t)=>{ tone(c,o,t,{type:'sawtooth',f0:116,dur:0.34,peak:0.12,detune:0}); tone(c,o,t,{type:'sawtooth',f0:110,dur:0.34,peak:0.12,detune:14}); tone(c,o,t,{type:'sine',f0:70,dur:0.22,peak:0.16,attack:0.002}); },
+  craftMasterful:(c,o,t)=>{ tone(c,o,t,{type:'sine',f0:940,f1:1680,dur:0.14,peak:0.07,attack:0.008}); },
+  craftReckless:(c,o,t)=>{ tone(c,o,t,{type:'square',f0:300,f1:250,dur:0.12,peak:0.05,detune:30}); },
+  progressGain:(c,o,t)=>{ tone(c,o,t,{type:'sine',f0:440,f1:660,dur:0.22,peak:0.1,attack:0.01}); },
+  progressLoss:(c,o,t)=>{ tone(c,o,t,{type:'triangle',f0:340,f1:215,dur:0.26,peak:0.1,attack:0.01}); },
+  momentumBuild:(c,o,t,i=1)=>{ const step=Math.max(1,Math.min(4,Math.round(i))); const f0=523*Math.pow(2,(step-1)/6); tone(c,o,t,{type:'sine',f0,dur:0.14,peak:0.1,attack:0.006}); },
+  momentumShatter:(c,o,t,i=1)=>{ const peak=0.13*i; noise(c,o,t,{type:'bandpass',freq:5200,freqTo:900,q:1.2,dur:0.34,peak,attack:0.002}); tone(c,o,t,{type:'triangle',f0:1320,f1:360,dur:0.3,peak:0.07,detune:22}); tone(c,o,t,{type:'sine',f0:92,dur:0.16,peak:0.1*i,attack:0.002}); },
+  ledgerStamp:(c,o,t)=>{ tone(c,o,t,{type:'sine',f0:104,f1:72,dur:0.14,peak:0.26,attack:0.002}); noise(c,o,t,{type:'lowpass',freq:900,q:0.7,dur:0.1,peak:0.16,attack:0.003}); noise(c,o,t,{type:'highpass',freq:3200,q:0.6,dur:0.03,peak:0.06,delay:0.02}); },
+  chroniclePage:(c,o,t)=>{ noise(c,o,t,{type:'highpass',freq:1800,freqTo:4200,q:0.5,dur:0.26,peak:0.07,attack:0.06}); },
+  victory:(c,o,t)=>{ tone(c,o,t,{type:'triangle',f0:392,dur:0.6,peak:0.1,attack:0.04}); tone(c,o,t,{type:'triangle',f0:494,dur:0.58,peak:0.1,attack:0.06,delay:0.06}); tone(c,o,t,{type:'triangle',f0:587,dur:0.6,peak:0.11,attack:0.08,delay:0.12}); tone(c,o,t,{type:'sine',f0:784,dur:0.5,peak:0.05,attack:0.1,delay:0.18}); },
+  defeat:(c,o,t)=>{ tone(c,o,t,{type:'triangle',f0:294,dur:0.42,peak:0.1,attack:0.02}); tone(c,o,t,{type:'triangle',f0:220,dur:0.5,peak:0.1,attack:0.02,delay:0.22}); tone(c,o,t,{type:'sine',f0:147,dur:0.7,peak:0.11,attack:0.04,delay:0.4}); },
+  stake:(c,o,t)=>{ tone(c,o,t,{type:'sine',f0:60,dur:0.18,peak:0.2,attack:0.004}); tone(c,o,t,{type:'sine',f0:60,dur:0.2,peak:0.22,attack:0.004,delay:0.42}); tone(c,o,t,{type:'triangle',f0:196,f1:330,dur:0.7,peak:0.05,attack:0.2}); },
+  denied:(c,o,t)=>{ tone(c,o,t,{type:'square',f0:220,f1:196,dur:0.18,peak:0.07}); },
+  blocked:(c,o,t)=>{ tone(c,o,t,{type:'square',f0:174,dur:0.12,peak:0.08}); tone(c,o,t,{type:'square',f0:164,dur:0.16,peak:0.08,delay:0.16}); noise(c,o,t,{type:'lowpass',freq:700,q:0.6,dur:0.1,peak:0.05}); },
+  uiTick:(c,o,t)=>{ noise(c,o,t,{type:'highpass',freq:3000,q:0.6,dur:0.025,peak:0.05,attack:0.001}); },
+};
+function createRattle(ctx, out){
+  const t0 = ctx.currentTime;
+  const src = ctx.createBufferSource(); src.buffer = noiseBuffer(ctx); src.loop = true;
+  const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.setValueAtTime(1500,t0); bp.Q.setValueAtTime(1.1,t0);
+  const trem = ctx.createGain(); trem.gain.setValueAtTime(0.055,t0);
+  const lfo = ctx.createOscillator(); lfo.type='square'; lfo.frequency.setValueAtTime(17,t0);
+  const lfoDepth = ctx.createGain(); lfoDepth.gain.setValueAtTime(0.05,t0);
+  lfo.connect(lfoDepth); lfoDepth.connect(trem.gain);
+  src.connect(bp); bp.connect(trem); trem.connect(out);
+  src.start(t0); lfo.start(t0);
+  let stopped=false;
+  return { stop(at){ if(stopped) return; stopped=true; const when=at ?? ctx.currentTime; const end=when+0.08;
+    try{ trem.gain.cancelScheduledValues(when); trem.gain.setValueAtTime(0.05,when); trem.gain.exponentialRampToValueAtTime(FLOOR,end);}catch(e){}
+    try{ src.stop(end+0.02); lfo.stop(end+0.02);}catch(e){} } };
+}
+
+// ── Engine (mirrors composables/useSoundscape.ts: one ctx + a master bus) ─────
+let ctx=null, master=null, rattle=null;
+const volEl = document.getElementById('vol');
+const statusEl = document.getElementById('status');
+function ensure(){
+  if (ctx) return true;
+  const Ctor = window.AudioContext || window.webkitAudioContext;
+  if (!Ctor) { statusEl.textContent = 'This browser has no Web Audio.'; return false; }
+  ctx = new Ctor();
+  master = ctx.createGain();
+  master.gain.value = parseFloat(volEl.value);
+  master.connect(ctx.destination);
+  return true;
+}
+function unlock(){ if(!ensure()) return; if(ctx.state==='suspended') ctx.resume(); statusEl.textContent='Sound on. Click cues to play.'; }
+function play(name, intensity, delay){ if(!ensure()) return; if(ctx.state==='suspended') ctx.resume(); const fn=SFX[name]; if(fn) fn(ctx, master, ctx.currentTime + (delay||0), intensity); }
+function startRattle(){ if(!ensure()) return; if(ctx.state==='suspended') ctx.resume(); if(rattle) return; rattle=createRattle(ctx, master); }
+function stopRattle(){ if(rattle){ rattle.stop(); rattle=null; } }
+volEl.addEventListener('input', ()=>{ if(master) master.gain.setTargetAtTime(parseFloat(volEl.value), ctx.currentTime, 0.01); });
+
+// ── A momentum climb (pips 1→4) and a few full-turn demos on real timings ─────
+const REVEAL = { suspense:450, swing:550, node:250 };
+function momentumClimb(){ [1,2,3,4].forEach((p,k)=> setTimeout(()=>play('momentumBuild', p), k*170)); }
+function seq(steps){ // steps: [ms, fn]
+  let t=0; for (const [dt, fn] of steps){ t+=dt; setTimeout(fn, t); }
+}
+function demoStrongTurn(){
+  seq([[0,()=>{play('dispatch'); startRattle();}],
+       [700,()=>{stopRattle(); play('diceLand',1.0); play('outcomeSuccess');}],
+       [REVEAL.swing,()=>{play('progressGain'); play('momentumBuild',2);}],
+       [REVEAL.node,()=>play('ledgerStamp')]]);
+}
+function demoCritWin(){
+  seq([[0,()=>{play('dispatch'); startRattle();}],
+       [800,()=>{stopRattle(); play('diceLand',1.3); play('outcomeCritSuccess'); play('craftMasterful',null,0.12);}],
+       [REVEAL.swing,()=>{play('progressGain'); play('momentumBuild',3);}],
+       [REVEAL.node,()=>play('ledgerStamp')],
+       [500,()=>play('victory')]]);
+}
+function demoCritFail(){
+  seq([[0,()=>{play('dispatch'); startRattle();}],
+       [800,()=>{stopRattle(); play('diceLand',1.3); play('outcomeCritFailure'); play('craftReckless',null,0.12);}],
+       [REVEAL.swing,()=>{play('progressLoss'); play('momentumShatter',1.3);}],
+       [REVEAL.node,()=>play('ledgerStamp')]]);
+}
+function demoStakeWin(){
+  seq([[0,()=>play('stake')],
+       [900,()=>{play('dispatch'); startRattle();}],
+       [800,()=>{stopRattle(); play('diceLand',1.3); play('outcomeCritSuccess');}],
+       [REVEAL.swing,()=>{play('progressGain'); play('momentumBuild',4);}],
+       [REVEAL.node,()=>play('ledgerStamp')],
+       [500,()=>play('victory')]]);
+}
+
+// ── Build the board ──────────────────────────────────────────────────────────
+const GROUPS = [
+  ["Compose & roll", [
+    ["dispatch","Send a dispatch","a soft whoosh — words into the past"],
+    ["__rattleStart","Dice rattle — start","the die shaking while fate is undecided"],
+    ["__rattleStop","Dice rattle — stop","the rattle ends the instant it lands"],
+    ["diceLand","Die lands — the thunk","a wooden knock on the desk (intensity 1.0)"],
+  ]],
+  ["Outcome stings (the five bands)", [
+    ["outcomeCritSuccess","Critical Success","the one earned fanfare (19–20)"],
+    ["outcomeSuccess","Success","a soft positive lift (13–18)"],
+    ["outcomeNeutral","Neutral","barely there — a shrug shouldn't sing (9–12)"],
+    ["outcomeFailure","Failure","a low descent (3–8)"],
+    ["outcomeCritFailure","Critical Failure","a dissonant thud — the floor falls out (1–2)"],
+  ]],
+  ["Craft grade — the extremes", [
+    ["craftMasterful","Masterful","a bright quill flick (fires a beat after the land)"],
+    ["craftReckless","Reckless","a sour scratch"],
+  ]],
+  ["The meters", [
+    ["progressGain","Progress — gain","a clean rising tone"],
+    ["progressLoss","Progress — loss","a darker, falling one"],
+    ["__momentumClimb","Momentum — climb ×4","ascending pips as the arc fills (1→4)"],
+    ["momentumShatter","Momentum — shatter","a glassy break (full collapse)"],
+  ]],
+  ["Timeline & chronicle", [
+    ["ledgerStamp","Wax-seal stamp ✦","the signature cue — a change sealed onto the Spine"],
+    ["chroniclePage","Page turn","paper under the chronicle's cross-fade"],
+  ]],
+  ["End of run & the wager", [
+    ["victory","Victory","a warm rising chord on the verdict seal"],
+    ["defeat","Defeat","a slow, low descent"],
+    ["stake","Stake the timeline","a heartbeat under a rising tension — the doubling wager"],
+  ]],
+  ["Denials & micro", [
+    ["denied","Denied","a soft, unmistakable 'no'"],
+    ["blocked","Blocked (moderation)","a lower, two-pulse, firmer refusal"],
+    ["uiTick","UI tick","a quiet papery click (figure select)"],
+  ]],
+  ["Hear a whole turn", [
+    ["__demoStrong","▷ A solid turn","dispatch · rattle · land · Success · gain · seal","demo"],
+    ["__demoCritWin","▷ A crit-success → win","the full reveal, into victory","demo"],
+    ["__demoCritFail","▷ A crit-failure","reckless dispatch, the arc shatters","demo"],
+    ["__demoStakeWin","▷ A staked last stand → win","wager, then the doubled swing lands","demo"],
+  ]],
+];
+const HANDLERS = {
+  __rattleStart:startRattle, __rattleStop:stopRattle, __momentumClimb:momentumClimb,
+  __demoStrong:demoStrongTurn, __demoCritWin:demoCritWin, __demoCritFail:demoCritFail, __demoStakeWin:demoStakeWin,
+};
+const board = document.getElementById('board');
+for (const [title, cues] of GROUPS){
+  const g = document.createElement('section'); g.className='grp';
+  const h = document.createElement('h2'); h.textContent=title; g.appendChild(h);
+  const grid = document.createElement('div'); grid.className='grid';
+  for (const [key, name, desc, kind] of cues){
+    const b = document.createElement('button'); b.className='cue'+(kind?(' '+kind):'');
+    b.innerHTML = '<span class="n"></span><span class="d"></span>';
+    b.querySelector('.n').textContent = name;
+    b.querySelector('.d').textContent = desc;
+    b.addEventListener('click', ()=>{ unlock(); (HANDLERS[key] || (()=>play(key)))(); b.classList.add('live'); setTimeout(()=>b.classList.remove('live'), 260); });
+    grid.appendChild(b);
+  }
+  g.appendChild(grid); board.appendChild(g);
+}
+</script>
+</body>
+</html>
