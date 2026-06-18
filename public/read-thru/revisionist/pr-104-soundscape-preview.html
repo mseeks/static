@@ -63,12 +63,12 @@
   <div class="rattle-panel">
     <button id="rattleToggle" class="cue" type="button"><span class="n">▶ Dice rattle — start</span><span class="d">the loop while the die is undecided</span></button>
     <div class="slid">
-      <label for="rate">Knocks <b id="rateVal">8</b>/sec</label>
-      <input id="rate" type="range" min="4" max="16" step="1" value="8">
+      <label for="rate">Knocks <b id="rateVal">5</b>/sec</label>
+      <input id="rate" type="range" min="4" max="16" step="1" value="5">
     </div>
     <div class="slid">
-      <label for="level">Level <b id="levelVal">0.42</b></label>
-      <input id="level" type="range" min="0" max="1" step="0.02" value="0.42">
+      <label for="level">Level <b id="levelVal">0.10</b></label>
+      <input id="level" type="range" min="0" max="1" step="0.02" value="0.10">
     </div>
     <p class="hint" style="flex-basis:100%;margin:2px 0 0">Drag while it plays to find the rattle you want, then tell me the two numbers — I'll bake them into the game.</p>
   </div>
@@ -206,7 +206,7 @@ function unlock(){ if(!ensure()) return; if(ctx.state==='suspended') ctx.resume(
 function play(name, intensity, delay){ if(!ensure()) return; if(ctx.state==='suspended') ctx.resume(); const fn=SFX[name]; if(fn) fn(ctx, master, ctx.currentTime + (delay||0), intensity); }
 // Live-tunable rattle params (the shipped defaults; the sliders adjust these so you can
 // dial in what sounds right and report the two numbers back).
-let rattleDensity = 8, rattleLevel = 0.42;
+let rattleDensity = 5, rattleLevel = 0.10;
 function startRattle(){ if(!ensure()) return; if(ctx.state==='suspended') ctx.resume(); if(rattle) return; rattle=createRattle(ctx, master, rattleDensity, rattleLevel); }
 function stopRattle(){ if(rattle){ rattle.stop(); rattle=null; } }
 function restartRattleIfPlaying(){ if(rattle){ rattle.stop(); rattle=createRattle(ctx, master, rattleDensity, rattleLevel); } }
