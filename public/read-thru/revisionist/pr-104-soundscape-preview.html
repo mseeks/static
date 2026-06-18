@@ -35,6 +35,13 @@
   button.cue.demo{background:transparent;border-color:var(--accent);}
   button.cue.demo .n{color:var(--accent);}
   button.cue.live{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 22%,transparent);}
+  .rattle-panel{display:flex;flex-wrap:wrap;align-items:center;gap:12px 22px;margin:4px 0 8px;
+    padding:14px 16px;border:1px solid var(--accent);border-radius:6px;background:color-mix(in srgb,var(--accent) 5%,var(--bg));}
+  .rattle-panel #rattleToggle{min-width:210px;}
+  .rattle-panel #rattleToggle.on{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 22%,transparent);}
+  .slid{display:flex;align-items:center;gap:10px;}
+  .slid label{font-size:12px;color:var(--mut);min-width:118px;}
+  .slid label b{color:var(--fg);font-variant-numeric:tabular-nums;}
   .seal{color:var(--accent);}
   footer{margin-top:40px;color:var(--faint);font-size:12px;border-top:1px solid var(--line);padding-top:14px;}
   a{color:var(--accent);}
@@ -51,6 +58,19 @@
       <input id="vol" type="range" min="0" max="1" step="0.01" value="0.8">
     </div>
     <span class="hint" id="status">Click a cue to start audio.</span>
+  </div>
+
+  <div class="rattle-panel">
+    <button id="rattleToggle" class="cue" type="button"><span class="n">▶ Dice rattle — start</span><span class="d">the loop while the die is undecided</span></button>
+    <div class="slid">
+      <label for="rate">Speed <b id="rateVal">7.0</b>/sec</label>
+      <input id="rate" type="range" min="3" max="14" step="0.5" value="7">
+    </div>
+    <div class="slid">
+      <label for="level">Level <b id="levelVal">0.030</b></label>
+      <input id="level" type="range" min="0" max="0.08" step="0.002" value="0.03">
+    </div>
+    <p class="hint" style="flex-basis:100%;margin:2px 0 0">Drag while it plays to find the rattle you want, then tell me the two numbers — I'll bake them into the game.</p>
   </div>
 
   <div id="board"></div>
@@ -131,20 +151,26 @@ const SFX = {
   blocked:(c,o,t)=>{ tone(c,o,t,{type:'square',f0:174,dur:0.12,peak:0.08}); tone(c,o,t,{type:'square',f0:164,dur:0.16,peak:0.08,delay:0.16}); noise(c,o,t,{type:'lowpass',freq:700,q:0.6,dur:0.1,peak:0.05}); },
   uiTick:(c,o,t)=>{ noise(c,o,t,{type:'highpass',freq:3000,q:0.6,dur:0.025,peak:0.05,attack:0.001}); },
 };
-function createRattle(ctx, out){
+// Slow, irregular wooden clatter: band-passed noise chopped by a wandering square gate
+// into bursts with true gaps between. rate = bursts/sec; level = quiet bed loudness.
+function createRattle(ctx, out, rate, level){
   const t0 = ctx.currentTime;
   const src = ctx.createBufferSource(); src.buffer = noiseBuffer(ctx); src.loop = true;
-  const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.setValueAtTime(1500,t0); bp.Q.setValueAtTime(1.1,t0);
-  const trem = ctx.createGain(); trem.gain.setValueAtTime(0.055,t0);
-  const lfo = ctx.createOscillator(); lfo.type='square'; lfo.frequency.setValueAtTime(17,t0);
-  const lfoDepth = ctx.createGain(); lfoDepth.gain.setValueAtTime(0.05,t0);
-  lfo.connect(lfoDepth); lfoDepth.connect(trem.gain);
-  src.connect(bp); bp.connect(trem); trem.connect(out);
-  src.start(t0); lfo.start(t0);
+  const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.setValueAtTime(1550,t0); bp.Q.setValueAtTime(0.7,t0);
+  const amp = ctx.createGain(); amp.gain.setValueAtTime(level,t0);
+  const gate = ctx.createOscillator(); gate.type='square'; gate.frequency.setValueAtTime(rate,t0);
+  const wander = ctx.createOscillator(); wander.type='sine'; wander.frequency.setValueAtTime(0.5,t0);
+  const wanderAmt = ctx.createGain(); wanderAmt.gain.setValueAtTime(rate*0.35,t0);
+  wander.connect(wanderAmt); wanderAmt.connect(gate.frequency);
+  const gateAmt = ctx.createGain(); gateAmt.gain.setValueAtTime(level,t0);
+  gate.connect(gateAmt); gateAmt.connect(amp.gain);
+  const bus = ctx.createGain(); bus.gain.setValueAtTime(1,t0);
+  src.connect(bp); bp.connect(amp); amp.connect(bus); bus.connect(out);
+  src.start(t0); gate.start(t0); wander.start(t0);
   let stopped=false;
-  return { stop(at){ if(stopped) return; stopped=true; const when=at ?? ctx.currentTime; const end=when+0.08;
-    try{ trem.gain.cancelScheduledValues(when); trem.gain.setValueAtTime(0.05,when); trem.gain.exponentialRampToValueAtTime(FLOOR,end);}catch(e){}
-    try{ src.stop(end+0.02); lfo.stop(end+0.02);}catch(e){} } };
+  return { stop(at){ if(stopped) return; stopped=true; const when=at ?? ctx.currentTime; const end=when+0.09;
+    try{ bus.gain.cancelScheduledValues(when); bus.gain.setValueAtTime(1,when); bus.gain.exponentialRampToValueAtTime(FLOOR,end);}catch(e){}
+    try{ src.stop(end+0.03); gate.stop(end+0.03); wander.stop(end+0.03);}catch(e){} } };
 }
 
 // ── Engine (mirrors composables/useSoundscape.ts: one ctx + a master bus) ─────
@@ -163,8 +189,12 @@ function ensure(){
 }
 function unlock(){ if(!ensure()) return; if(ctx.state==='suspended') ctx.resume(); statusEl.textContent='Sound on. Click cues to play.'; }
 function play(name, intensity, delay){ if(!ensure()) return; if(ctx.state==='suspended') ctx.resume(); const fn=SFX[name]; if(fn) fn(ctx, master, ctx.currentTime + (delay||0), intensity); }
-function startRattle(){ if(!ensure()) return; if(ctx.state==='suspended') ctx.resume(); if(rattle) return; rattle=createRattle(ctx, master); }
+// Live-tunable rattle params (the shipped defaults; the sliders adjust these so you can
+// dial in what sounds right and report the two numbers back).
+let rattleRate = 7, rattleLevel = 0.03;
+function startRattle(){ if(!ensure()) return; if(ctx.state==='suspended') ctx.resume(); if(rattle) return; rattle=createRattle(ctx, master, rattleRate, rattleLevel); }
 function stopRattle(){ if(rattle){ rattle.stop(); rattle=null; } }
+function restartRattleIfPlaying(){ if(rattle){ rattle.stop(); rattle=createRattle(ctx, master, rattleRate, rattleLevel); } }
 volEl.addEventListener('input', ()=>{ if(master) master.gain.setTargetAtTime(parseFloat(volEl.value), ctx.currentTime, 0.01); });
 
 // ── A momentum climb (pips 1→4) and a few full-turn demos on real timings ─────
@@ -205,8 +235,6 @@ function demoStakeWin(){
 const GROUPS = [
   ["Compose & roll", [
     ["dispatch","Send a dispatch","a soft whoosh — words into the past"],
-    ["__rattleStart","Dice rattle — start","the die shaking while fate is undecided"],
-    ["__rattleStop","Dice rattle — stop","the rattle ends the instant it lands"],
     ["diceLand","Die lands — the thunk","a wooden knock on the desk (intensity 1.0)"],
   ]],
   ["Outcome stings (the five bands)", [
@@ -266,6 +294,20 @@ for (const [title, cues] of GROUPS){
   }
   g.appendChild(grid); board.appendChild(g);
 }
+
+// Rattle panel: a toggle + live Speed/Level sliders that rebuild the rattle as you drag.
+const rateEl=document.getElementById('rate'), levelEl=document.getElementById('level');
+const rateVal=document.getElementById('rateVal'), levelVal=document.getElementById('levelVal');
+const rattleToggle=document.getElementById('rattleToggle');
+function syncRattle(){ rateVal.textContent=parseFloat(rateEl.value).toFixed(1); levelVal.textContent=parseFloat(levelEl.value).toFixed(3); }
+rateEl.addEventListener('input', ()=>{ rattleRate=parseFloat(rateEl.value); syncRattle(); restartRattleIfPlaying(); });
+levelEl.addEventListener('input', ()=>{ rattleLevel=parseFloat(levelEl.value); syncRattle(); restartRattleIfPlaying(); });
+rattleToggle.addEventListener('click', ()=>{
+  unlock();
+  if(rattle){ stopRattle(); rattleToggle.classList.remove('on'); rattleToggle.querySelector('.n').textContent='▶ Dice rattle — start'; }
+  else { startRattle(); rattleToggle.classList.add('on'); rattleToggle.querySelector('.n').textContent='■ Dice rattle — stop'; }
+});
+syncRattle();
 </script>
 </body>
 </html>
