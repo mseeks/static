@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="en" class="">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Everwhen — The Codex (concept)</title>
+<meta name="description" content="A redesign concept for Everwhen: the turn as a sequence of focused leaves in an illuminated codex." />
+<style>
+/* ──────────────────────────────────────────────────────────────────────────
+   EVERWHEN — "THE CODEX"  ·  redesign concept, looping showcase
+   A self-contained prototype. No network, no framework. It restructures the
+   game's dense dashboard into one illuminated codex whose pages turn as a turn
+   progresses. Design tokens + motion vocabulary are lifted verbatim from the
+   real app (assets/css/main.css) so it reads as the same object, just unified.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Design tokens (from the app) ────────────────────────────────────────── */
+:root {
+  --ew-fg: #2b241c; --ew-mut: #685c49; --ew-faint: #7d6f57;
+  --ew-hair: #c9b99c; --ew-line: #e6dcc8; --ew-bg: #faf6ee; --ew-tint: #f1ebdd;
+  --ew-accent: #b1532e; --ew-ok: #466632; --ew-warn: #8a5a16; --ew-bad: #7c2d26;
+  --ew-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ew-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
+  --ew-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Motion vocabulary — three durations, two curves (the struck-token overshoot). */
+  --ew-dur-1: 140ms; --ew-dur-2: 280ms; --ew-dur-3: 520ms;
+  --ew-ease: cubic-bezier(.2,.7,.3,1);
+  --ew-ease-spring: cubic-bezier(.2,1.4,.4,1);
+  /* The desk the codex rests on. */
+  --desk-1: #d9cdb4; --desk-2: #b6a585; --desk-edge: #6f6149;
+}
+html.dark {
+  --ew-fg: #ece4d6; --ew-mut: #b3a892; --ew-faint: #978c77;
+  --ew-hair: #4a4133; --ew-line: #2f2820; --ew-bg: #14110d; --ew-tint: #1c1813;
+  --ew-accent: #db7a4f; --ew-ok: #74b35f; --ew-warn: #d8a34d; --ew-bad: #e08a72;
+  --desk-1: #221d16; --desk-2: #100c08; --desk-edge: #050403;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--ew-sans);
+  font-size: 15px; line-height: 1.55;
+  color: var(--ew-fg);
+  /* The desk: a warm surface with a deep vignette that frames the codex. */
+  background:
+    radial-gradient(120% 110% at 50% 36%, var(--desk-1) 0%, var(--desk-2) 58%, var(--desk-edge) 100%);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+::selection { background: color-mix(in srgb, var(--ew-accent) 24%, transparent); }
+
+.ew-mono { font-family: var(--ew-mono); }
+.ew-serif { font-family: var(--ew-serif); }
+.ew-accent { color: var(--ew-accent); }
+.ew-muted { color: var(--ew-mut); }
+.ew-faint { color: var(--ew-faint); }
+.ew-ok { color: var(--ew-ok); }
+.ew-warn { color: var(--ew-warn); }
+.ew-bad { color: var(--ew-bad); }
+.ew-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .12em;
+  font-weight: 600; color: var(--ew-mut);
+}
+
+/* A faint letterpress paper grain, reused on every paper surface. */
+.grain::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  opacity: .035; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+}
+html.dark .grain::before { mix-blend-mode: screen; opacity: .05; }
+
+/* ── The stage: desk → codex → leaf ──────────────────────────────────────── */
+#desk {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; padding: 22px;
+}
+
+/* The codex: the single book-object the whole game lives inside. The one place a
+   soft shadow is allowed — it grounds the book on the desk. Interiors stay flat
+   (structure from hairlines + space + type), per the app's editorial rule. */
+#codex {
+  position: relative;
+  width: min(96vw, 1000px); height: min(88vh, 660px);
+  background: var(--ew-bg);
+  border: 1px solid var(--ew-line);
+  border-radius: 4px;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--ew-bg) 70%, #fff) inset,
+    0 18px 50px -18px rgba(40,28,14,.55),
+    0 40px 90px -40px rgba(20,12,4,.6);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+/* The spine: a hairline gutter down the left, like a bound codex. */
+#codex::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 46px; width: 1px;
+  background: linear-gradient(var(--ew-line), transparent 8%, transparent 92%, var(--ew-line));
+  opacity: .5; pointer-events: none; z-index: 2;
+}
+
+/* ── Masthead (the constant running head) ────────────────────────────────── */
+#masthead {
+  position: relative; z-index: 3; flex: none;
+  padding: 11px 20px 0 20px;
+}
+.mast-row { display: flex; align-items: center; gap: 14px; }
+.wordmark { display: flex; align-items: baseline; gap: 8px; user-select: none; }
+.wordmark svg { width: 22px; height: 22px; align-self: center; flex: none; }
+.wordmark h1 {
+  margin: 0; font-size: 13px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .14em; color: var(--ew-fg);
+}
+.wordmark .tag { font-size: 11px; color: var(--ew-faint); }
+.ew-seal { fill: var(--ew-accent); }
+.ew-cut { stroke: var(--ew-bg); }
+.ew-cut-f { fill: var(--ew-bg); }
+
+.mast-objective { flex: 1 1 auto; min-width: 0; text-align: center; }
+.mast-objective .obj-kicker { font-size: 10px; letter-spacing: .18em; }
+.mast-objective .obj-name {
+  font-family: var(--ew-serif); font-size: 16px; color: var(--ew-fg);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mast-controls { display: flex; align-items: center; gap: 4px; }
+.icon-btn {
+  appearance: none; border: 0; background: transparent; color: var(--ew-faint);
+  width: 32px; height: 32px; border-radius: 4px; cursor: pointer; line-height: 1;
+  font-size: 15px; display: inline-flex; align-items: center; justify-content: center;
+  transition: color var(--ew-dur-1) var(--ew-ease), background var(--ew-dur-1) var(--ew-ease);
+}
+.icon-btn:hover { color: var(--ew-fg); background: var(--ew-tint); }
+.icon-btn.on { color: var(--ew-accent); }
+
+/* The slim status strip under the masthead: progress thread + dispatch pips. */
+.mast-strip {
+  display: flex; align-items: center; gap: 16px;
+  margin-top: 9px; padding-bottom: 9px;
+  border-bottom: 1px solid var(--ew-line);
+}
+.prog-thread { flex: 1 1 auto; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.prog-thread .pct { font-family: var(--ew-mono); font-size: 12px; font-weight: 700; color: var(--ew-fg); min-width: 34px; }
+.ew-track { position: relative; flex: 1 1 auto; height: 5px; background: var(--ew-line); border-radius: 999px; overflow: hidden; }
+.ew-track .ew-fill {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
+  background: var(--ew-fg); border-radius: 999px;
+  transition: width var(--ew-dur-3) var(--ew-ease), background var(--ew-dur-2) var(--ew-ease);
+}
+.ew-track.brink .ew-fill { background: var(--ew-accent); box-shadow: 0 0 10px color-mix(in srgb, var(--ew-accent) 60%, transparent); }
+.ew-track.win .ew-fill { background: var(--ew-ok); box-shadow: 0 0 10px color-mix(in srgb, var(--ew-ok) 60%, transparent); }
+.prog-need { font-size: 10px; color: var(--ew-faint); white-space: nowrap; }
+
+.pips { display: flex; align-items: center; gap: 6px; }
+.pips .pip {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 1.4px solid var(--ew-hair); background: transparent;
+  transition: background var(--ew-dur-2) var(--ew-ease), border-color var(--ew-dur-2) var(--ew-ease), transform var(--ew-dur-2) var(--ew-ease-spring);
+}
+.pips .pip.spent { background: var(--ew-accent); border-color: var(--ew-accent); }
+.pips .pip.staked { background: var(--ew-bad); border-color: var(--ew-bad); }
+
+/* ── The leaf stage ──────────────────────────────────────────────────────── */
+#stage {
+  position: relative; z-index: 1; flex: 1 1 auto; min-height: 0;
+  perspective: 2400px; perspective-origin: 0% 50%;
+}
+.leaf {
+  position: absolute; inset: 0;
+  padding: 26px 40px 22px 70px;
+  display: flex; flex-direction: column;
+  transform-origin: left center;
+  background: var(--ew-bg);
+  will-change: transform, opacity, filter;
+}
+/* The folio header on every leaf: act numeral + act name, like a manuscript head. */
+.folio { display: flex; align-items: baseline; gap: 12px; flex: none; margin-bottom: 14px; }
+.folio .numeral {
+  font-family: var(--ew-serif); font-style: italic; font-size: 13px; color: var(--ew-accent);
+  min-width: 34px;
+}
+.folio .act-name { font-family: var(--ew-serif); font-size: 20px; color: var(--ew-fg); }
+.folio .act-sub { margin-left: auto; }
+.leaf-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+
+/* Leaf transitions. Generic settle (fade + lift) + a temporal sheen sweep on
+   enter (lifted from the app's RewriteText flourish). The page-turn boundary is
+   a literal 3D leaf turn, reserved for turn→turn. */
+.leaf.enter { opacity: 0; transform: translateY(10px) scale(.992); }
+.leaf.in { opacity: 1; transform: none; transition: opacity var(--ew-dur-3) var(--ew-ease), transform var(--ew-dur-3) var(--ew-ease); }
+.leaf.exit { opacity: 0; transform: translateY(-8px) scale(.99); transition: opacity var(--ew-dur-2) var(--ew-ease), transform var(--ew-dur-2) var(--ew-ease); }
+/* Page-turn: the outgoing leaf turns over around the spine. */
+.leaf.turn-out {
+  transform: rotateY(-118deg); opacity: .25;
+  transition: transform 620ms var(--ew-ease), opacity 620ms var(--ew-ease);
+  box-shadow: 40px 0 60px -20px rgba(20,12,4,.5);
+}
+.leaf.turn-in { opacity: 0; }
+.leaf.turn-in.in { opacity: 1; transition: opacity 360ms var(--ew-ease) 180ms; transform: none; }
+
+/* The temporal sheen that washes across an entering leaf. */
+.leaf .sheen {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: linear-gradient(105deg, transparent 30%, color-mix(in srgb, var(--ew-accent) 16%, transparent) 50%, transparent 70%);
+  background-size: 280% 100%; background-position: 180% 0; opacity: 0;
+}
+.leaf.in .sheen { animation: sheen-sweep var(--ew-dur-3) var(--ew-ease); }
+@keyframes sheen-sweep {
+  0% { background-position: 180% 0; opacity: .9; }
+  100% { background-position: -120% 0; opacity: 0; }
+}
+
+/* ── Shared primitives ───────────────────────────────────────────────────── */
+.ew-input-look {
+  background: var(--ew-bg); border: 1px solid var(--ew-line); border-radius: 2px;
+  box-shadow: inset 0 0 0 3px var(--ew-bg), inset 0 0 0 4px var(--ew-line);
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; padding: 2px 9px; border-radius: 999px;
+  border: 1px solid var(--ew-line);
+}
+.chip.ok { color: var(--ew-ok); border-color: color-mix(in srgb, var(--ew-ok) 40%, var(--ew-line)); }
+.chip.warn { color: var(--ew-warn); border-color: color-mix(in srgb, var(--ew-warn) 40%, var(--ew-line)); }
+.chip.mut { color: var(--ew-mut); }
+.chip.bad { color: var(--ew-bad); border-color: color-mix(in srgb, var(--ew-bad) 40%, var(--ew-line)); }
+.lede { font-family: var(--ew-serif); color: var(--ew-mut); font-size: 15.5px; line-height: 1.6; }
+.center-col { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; }
+
+/* The wax seal as a stampable mark (reused: the send button, the spine stamp). */
+.seal-mark { display: inline-block; }
+.seal-mark svg { display: block; width: 100%; height: 100%; }
+.seal-mark .ew-seal { fill: var(--ew-accent); }
+.seal-mark .ew-cut { stroke: var(--ew-bg); }
+.seal-mark .ew-cut-f { fill: var(--ew-bg); }
+
+/* ── Leaf: Mission select (run opener) ───────────────────────────────────── */
+.mission .crusades { width: min(560px, 100%); margin: 0 auto; text-align: left; }
+.crusade {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border-left: 2px solid transparent; cursor: default;
+  transition: background var(--ew-dur-1) var(--ew-ease), border-color var(--ew-dur-1) var(--ew-ease);
+}
+.crusade .dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--ew-hair); flex: none; }
+.crusade .c-name { font-family: var(--ew-serif); font-size: 17px; }
+.crusade .c-why { font-size: 12px; color: var(--ew-faint); }
+.crusade.sel { background: var(--ew-tint); border-left-color: var(--ew-accent); }
+.crusade.sel .dot { background: var(--ew-accent); border-color: var(--ew-accent); }
+.crusade.sel .c-name { color: var(--ew-fg); }
+
+/* ── Leaf: Dispatch (compose) ────────────────────────────────────────────── */
+.dispatch .compose-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px; flex: 1 1 auto; min-height: 0; }
+.figure-card { display: flex; flex-direction: column; gap: 12px; }
+.fig-id { display: flex; gap: 13px; align-items: center; }
+.fig-portrait {
+  width: 56px; height: 56px; border-radius: 50%; flex: none;
+  background: radial-gradient(120% 120% at 35% 28%, var(--ew-tint), color-mix(in srgb, var(--ew-accent) 22%, var(--ew-tint)));
+  border: 1px solid var(--ew-line); display: flex; align-items: center; justify-content: center;
+  font-family: var(--ew-serif); font-size: 22px; color: var(--ew-accent);
+  box-shadow: inset 0 0 0 3px var(--ew-bg), inset 0 0 0 4px var(--ew-line);
+}
+.fig-name { font-family: var(--ew-serif); font-size: 19px; }
+.fig-role { font-size: 12px; color: var(--ew-faint); }
+.when-line { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ew-mut); }
+.when-rail { position: relative; height: 18px; margin-top: 2px; }
+.when-rail .track { position: absolute; left: 0; right: 0; top: 8px; height: 2px; background: var(--ew-line); }
+.when-rail .span { position: absolute; top: 7px; height: 4px; background: color-mix(in srgb, var(--ew-accent) 30%, var(--ew-line)); border-radius: 2px; }
+.when-rail .head { position: absolute; top: 1px; width: 4px; height: 16px; background: var(--ew-accent); border-radius: 1.5px; transform: translateX(-2px); }
+.when-rail .yr { position: absolute; top: -14px; font-family: var(--ew-mono); font-size: 10px; color: var(--ew-accent); transform: translateX(-50%); white-space: nowrap; }
+.when-ends { display: flex; justify-content: space-between; font-family: var(--ew-mono); font-size: 9px; color: var(--ew-faint); margin-top: 1px; }
+
+.compose-sheet { display: flex; flex-direction: column; gap: 8px; }
+.compose-sheet .note {
+  position: relative; flex: 1 1 auto; min-height: 96px; padding: 14px 15px;
+  font-family: var(--ew-serif); font-size: 16px; line-height: 1.62; color: var(--ew-fg);
+}
+.compose-sheet .note .caret { display: inline-block; width: 1px; height: 1.05em; background: var(--ew-accent); vertical-align: -0.18em; margin-left: 1px; animation: caret-blink 1s steps(1) infinite; }
+@keyframes caret-blink { 50% { opacity: 0; } }
+.ammo { display: flex; align-items: center; gap: 10px; }
+.ammo .bar { flex: 1 1 auto; height: 4px; background: var(--ew-line); border-radius: 999px; overflow: hidden; }
+.ammo .bar > i { display: block; height: 100%; background: var(--ew-fg); transition: width var(--ew-dur-2) var(--ew-ease); }
+.ammo .count { font-family: var(--ew-mono); font-size: 11px; color: var(--ew-faint); }
+.reads { display: flex; gap: 8px; flex-wrap: wrap; }
+.send-row { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+.send-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--ew-accent); color: #fff; border: 1px solid var(--ew-accent);
+  border-radius: 3px; padding: 9px 18px 9px 12px; font: inherit; font-weight: 700; cursor: pointer;
+}
+html.dark .send-btn { color: #0d0d0d; }
+.send-btn .seal-mark { width: 22px; height: 22px; }
+.send-btn .seal-mark .ew-cut, .send-btn .seal-mark .ew-cut-f { stroke: var(--ew-accent); fill: var(--ew-accent); }
+.send-btn.stamp { animation: seal-stamp 520ms var(--ew-ease-spring); }
+@keyframes seal-stamp { 0% { transform: scale(1); } 30% { transform: scale(.93); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
+
+/* ── Leaf: Sending (the obvious loading state) ───────────────────────────── */
+.sending .center-col { gap: 26px; }
+.corridor { position: relative; width: 260px; height: 150px; }
+.corridor .ring {
+  position: absolute; left: 50%; top: 50%; border: 1px solid var(--ew-accent); border-radius: 50%;
+  transform: translate(-50%,-50%); opacity: 0;
+  animation: travel 2.4s var(--ew-ease) infinite;
+}
+@keyframes travel {
+  0% { width: 18px; height: 18px; opacity: 0; }
+  18% { opacity: .8; }
+  100% { width: 320px; height: 320px; opacity: 0; }
+}
+.corridor .letter {
+  position: absolute; left: 50%; top: 50%; width: 30px; height: 38px; transform: translate(-50%,-50%);
+  background: var(--ew-bg); border: 1px solid var(--ew-accent); border-radius: 2px;
+  animation: letter-recede 2.4s var(--ew-ease) infinite;
+}
+.corridor .letter .seal-mark { position: absolute; left: 50%; top: 50%; width: 13px; height: 13px; transform: translate(-50%,-50%); }
+@keyframes letter-recede {
+  0% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(.2); opacity: 0; }
+}
+.sweep-line { width: 200px; height: 2px; background: var(--ew-line); position: relative; overflow: hidden; }
+.sweep-line::after { content:""; position:absolute; inset:0; background: var(--ew-accent); transform-origin:left; animation: ew-load-sweep 1.15s var(--ew-ease) infinite; }
+@keyframes ew-load-sweep { 0%{transform:translateX(-100%) scaleX(.35);} 55%{transform:translateX(40%) scaleX(.6);} 100%{transform:translateX(160%) scaleX(.35);} }
+
+/* ── Leaf: Judgment (the quill weighs craft) ─────────────────────────────── */
+.judgment .grade-big { font-family: var(--ew-serif); font-size: 46px; letter-spacing: .01em; line-height: 1; }
+.judgment .grade-reason { max-width: 30ch; }
+.tilt-pill {
+  display: inline-flex; align-items: center; gap: 7px; font-family: var(--ew-mono); font-size: 12px;
+  padding: 4px 12px; border: 1px solid var(--ew-line); border-radius: 999px; color: var(--ew-accent);
+}
+.quill-sweep { font-family: var(--ew-serif); font-style: italic; font-size: 14px; color: var(--ew-faint); }
+
+/* ── Leaf: Dice of Fate ──────────────────────────────────────────────────── */
+.dice .center-col { gap: 18px; }
+.die-wrap { position: relative; width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; }
+.die {
+  width: 120px; height: 120px; color: var(--ew-mut);
+  transition: width var(--ew-dur-3) var(--ew-ease-spring), height var(--ew-dur-3) var(--ew-ease-spring), color var(--ew-dur-2) var(--ew-ease);
+}
+.die svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.die .edge { fill: none; stroke: currentColor; stroke-width: 3; stroke-linejoin: round; }
+.die .facet { fill: none; stroke: currentColor; stroke-width: 1.5; opacity: .5; }
+.die .num { fill: currentColor; font-family: var(--ew-serif); font-weight: 700; text-anchor: middle; }
+.die.rolling { animation: dice-shake 520ms linear infinite; color: var(--ew-accent); }
+.die.land { animation: dice-pop 520ms var(--ew-ease-spring); }
+.die.soft { width: 96px; height: 96px; }
+.die.strong { width: 132px; height: 132px; }
+.die.crit { width: 168px; height: 168px; }
+.die.ok { color: var(--ew-ok); }
+.die.warn { color: var(--ew-warn); }
+.die.bad { color: var(--ew-bad); }
+.die.glow { filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 16px currentColor); }
+@keyframes dice-shake {
+  0%{transform:rotate(0) translateY(0);} 25%{transform:rotate(9deg) translateY(-3px);}
+  50%{transform:rotate(-7deg) translateY(2px);} 75%{transform:rotate(6deg) translateY(-2px);} 100%{transform:rotate(0) translateY(0);}
+}
+@keyframes dice-pop { 0%{transform:scale(.6) rotate(-12deg);} 60%{transform:scale(1.18);} 100%{transform:scale(1);} }
+.crit-ring { position: absolute; width: 150px; height: 150px; border: 2px solid currentColor; border-radius: 50%; opacity: 0; }
+.crit-ring.go { animation: crit-ring 700ms var(--ew-ease); }
+@keyframes crit-ring { 0%{transform:scale(.8); opacity:.85;} 100%{transform:scale(1.6); opacity:0;} }
+.dice .verdict { font-family: var(--ew-serif); font-size: 22px; }
+.dice .band { font-family: var(--ew-mono); font-size: 12px; }
+
+/* ── Leaf: Reply (the figure answers) ────────────────────────────────────── */
+.reply .reply-grid { display: grid; grid-template-columns: auto 1fr; gap: 26px; flex: 1 1 auto; min-height: 0; align-items: center; }
+.reply .who { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 120px; }
+.reply .who .fig-portrait { width: 72px; height: 72px; font-size: 28px; }
+.reply .who .nm { font-family: var(--ew-serif); font-size: 15px; text-align: center; }
+.reply .who .yr { font-family: var(--ew-mono); font-size: 10px; color: var(--ew-faint); }
+.reply .letter {
+  position: relative; padding: 4px 6px; min-width: 0; overflow: auto;
+}
+.reply .letter .quote {
+  font-family: var(--ew-serif); font-size: 18px; line-height: 1.62; color: var(--ew-fg);
+}
+.reply .letter .quote::first-letter { font-size: 1.05em; color: var(--ew-accent); }
+.reply .action {
+  margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--ew-line);
+  font-size: 13px; color: var(--ew-mut); display: flex; gap: 9px; align-items: baseline;
+}
+.reply .action .glyph { color: var(--ew-accent); }
+
+/* ── Leaf: Ripple (history bends) ────────────────────────────────────────── */
+.ripple .ripple-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 30px; flex: 1 1 auto; min-height: 0; }
+.ripple .headline { font-family: var(--ew-serif); font-size: 23px; line-height: 1.3; }
+.ripple .detail { font-size: 13.5px; color: var(--ew-mut); margin-top: 8px; }
+.ripple .equation {
+  margin-top: 16px; font-family: var(--ew-mono); font-size: 12.5px; color: var(--ew-faint);
+  display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px;
+  border: 1px solid var(--ew-line); border-radius: 3px;
+}
+.ripple .equation b { color: var(--ew-fg); }
+.gauge-col { display: flex; flex-direction: column; justify-content: center; gap: 18px; border-left: 1px solid var(--ew-line); padding-left: 26px; }
+.big-gauge { position: relative; }
+.big-gauge .pctrow { display: flex; align-items: baseline; gap: 10px; }
+.big-gauge .pctnum { font-family: var(--ew-mono); font-size: 40px; font-weight: 700; color: var(--ew-fg); }
+.big-gauge .pctnum.pop { animation: pct-pop var(--ew-dur-2) var(--ew-ease-spring); }
+@keyframes pct-pop { 0%{transform:scale(1);} 35%{transform:scale(1.14);} 100%{transform:scale(1);} }
+.big-gauge .delta {
+  position: absolute; right: 0; top: -4px; font-family: var(--ew-mono); font-size: 16px; font-weight: 700; opacity: 0;
+}
+.big-gauge .delta.up { color: var(--ew-ok); }
+.big-gauge .delta.down { color: var(--ew-bad); }
+.big-gauge .delta.fly { animation: delta-float 1250ms var(--ew-ease); }
+@keyframes delta-float {
+  0%{opacity:0; transform:translateY(6px) scale(.9);} 20%{opacity:1; transform:translateY(-2px);} 100%{opacity:0; transform:translateY(-24px);}
+}
+.big-gauge .stage-line { font-family: var(--ew-serif); font-style: italic; font-size: 13px; color: var(--ew-mut); margin-top: 7px; }
+.momentum { display: flex; align-items: center; gap: 9px; }
+.momentum .label { font-size: 10px; }
+.momentum .arc { display: flex; gap: 5px; }
+.momentum .mp { width: 9px; height: 9px; border-radius: 2px; border: 1px solid var(--ew-hair); background: transparent; transition: background var(--ew-dur-2) var(--ew-ease-spring), border-color var(--ew-dur-2) var(--ew-ease); }
+.momentum .mp.on { background: var(--ew-accent); border-color: var(--ew-accent); box-shadow: 0 0 6px color-mix(in srgb, var(--ew-accent) 55%, transparent); animation: pip-fill var(--ew-dur-2) var(--ew-ease-spring); }
+@keyframes pip-fill { 0%{transform:scaleY(.4); opacity:.5;} 60%{transform:scaleY(1.25);} 100%{transform:scaleY(1); opacity:1;} }
+.momentum .factor { font-family: var(--ew-mono); font-size: 11px; color: var(--ew-ok); }
+
+/* The spine node sealing in (the wax-seal stamp moment, given focus). */
+.spine-seal { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.spine-seal .seal-mark { width: 30px; height: 30px; }
+.spine-seal .seal-mark.drop { animation: seal-stamp 520ms var(--ew-ease-spring); }
+.spine-seal .node-line { font-size: 12px; color: var(--ew-mut); }
+.spine-seal .node-line .era { font-family: var(--ew-mono); color: var(--ew-faint); }
+
+/* ── Leaf: Chronicle (the history retold) ────────────────────────────────── */
+.chronicle .scroll { flex: 1 1 auto; min-height: 0; overflow: auto; max-width: 64ch; }
+.chronicle .ch-title { font-family: var(--ew-serif); font-size: 22px; color: var(--ew-fg); margin-bottom: 12px; }
+.chronicle .ch-body { font-family: var(--ew-serif); font-size: 16.5px; line-height: 1.72; color: var(--ew-mut); }
+.chronicle .ch-body p { margin: 0 0 14px 0; }
+.chronicle .ch-body p:first-of-type::first-letter {
+  font-family: var(--ew-serif); font-size: 2.9em; line-height: .78; float: left;
+  margin: .04em .1em 0 0; color: var(--ew-accent); font-weight: 600;
+}
+.chronicle .fadein { animation: ch-fade var(--ew-dur-3) var(--ew-ease); }
+@keyframes ch-fade { from { opacity: 0; } to { opacity: 1; } }
+.rewriting { font-size: 11px; color: var(--ew-faint); display: inline-flex; gap: 6px; align-items: center; }
+.ew-spinner { display: inline-block; width: .85em; height: .85em; border: 2px solid currentColor; border-bottom-color: transparent; border-radius: 50%; animation: ew-spin .7s linear infinite; }
+@keyframes ew-spin { to { transform: rotate(360deg); } }
+
+/* ── The record overlay (summon all history) ─────────────────────────────── */
+#record {
+  position: absolute; inset: 0; z-index: 8; display: none;
+  background: color-mix(in srgb, var(--ew-bg) 92%, transparent);
+  backdrop-filter: blur(2px);
+}
+#record.show { display: flex; flex-direction: column; animation: ch-fade var(--ew-dur-2) var(--ew-ease); }
+#record .rec-head { display: flex; align-items: center; gap: 12px; padding: 16px 22px 10px 70px; }
+#record .rec-head .seal-mark { width: 26px; height: 26px; flex: none; }
+#record .rec-head .t { font-family: var(--ew-serif); font-size: 18px; }
+#record .rec-head .close { margin-left: auto; }
+#record .spread { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+#record .pane { padding: 6px 24px 22px 24px; overflow: auto; min-height: 0; }
+#record .pane.left { border-right: 1px solid var(--ew-line); padding-left: 70px; }
+.rec-node { display: grid; grid-template-columns: 56px 1fr auto; gap: 10px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--ew-line); }
+.rec-node .era { font-family: var(--ew-mono); font-size: 10px; color: var(--ew-faint); }
+.rec-node .ev { font-size: 13px; }
+.rec-node .ev .fig { font-family: var(--ew-serif); }
+.rec-node .ev .hl { color: var(--ew-mut); font-size: 12px; }
+.rec-node .swing { font-family: var(--ew-mono); font-size: 12px; font-weight: 700; }
+
+/* ── The end screen (victory takeover) ───────────────────────────────────── */
+#endscreen {
+  position: absolute; inset: 0; z-index: 9; display: none; padding: 30px 44px 26px 70px;
+  background: var(--ew-bg); flex-direction: column;
+}
+#endscreen.show { display: flex; animation: ch-fade var(--ew-dur-3) var(--ew-ease); }
+#endscreen .verdict-kicker { letter-spacing: .3em; }
+#endscreen .verdict { font-family: var(--ew-serif); font-size: 40px; color: var(--ew-fg); margin: 4px 0 2px; }
+#endscreen .epi-title { font-family: var(--ew-serif); font-style: italic; font-size: 17px; color: var(--ew-accent); margin-top: 14px; }
+#endscreen .epi-body { font-family: var(--ew-serif); font-size: 15.5px; line-height: 1.7; color: var(--ew-mut); max-width: 60ch; margin-top: 6px; overflow: auto; }
+#endscreen .epi-body::first-letter { font-size: 2.4em; color: var(--ew-accent); float: left; line-height: .8; margin: .05em .09em 0 0; font-weight: 600; }
+#endscreen .stats { display: flex; gap: 30px; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--ew-line); }
+#endscreen .stat .v { font-family: var(--ew-mono); font-size: 22px; font-weight: 700; color: var(--ew-fg); }
+#endscreen .stat .k { font-size: 10px; }
+
+/* ── Showcase transport (clearly not the game) ───────────────────────────── */
+#transport {
+  display: flex; align-items: center; gap: 14px;
+  color: color-mix(in srgb, #fff 75%, var(--desk-edge));
+  font-size: 11px; user-select: none;
+}
+html.dark #transport { color: color-mix(in srgb, var(--ew-fg) 55%, var(--desk-edge)); }
+#transport .tbtn {
+  appearance: none; border: 1px solid currentColor; background: transparent; color: inherit;
+  width: 30px; height: 26px; border-radius: 4px; cursor: pointer; opacity: .8;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 12px;
+}
+#transport .tbtn:hover { opacity: 1; }
+#transport .acts { display: flex; gap: 6px; align-items: center; }
+#transport .actdot { width: 7px; height: 7px; border-radius: 50%; border: 1px solid currentColor; opacity: .55; }
+#transport .actdot.on { background: currentColor; opacity: 1; }
+#transport .cap { opacity: .7; letter-spacing: .04em; }
+#transport .cap b { font-weight: 700; opacity: .95; }
+
+/* ── Narrow viewports: graceful degrade (the showcase is built for a wide
+   screen, but a public URL gets opened on phones — don't break there). ────── */
+@media (max-width: 760px) {
+  #codex { width: 96vw; height: 90vh; }
+  #codex::after { left: 22px; }
+  .leaf { padding: 18px 18px 16px 34px; }
+  .mast-objective .obj-name { font-size: 14px; }
+  .wordmark .tag, .mast-objective .obj-kicker { display: none; }
+  .dispatch .compose-grid, .reply .reply-grid, .ripple .ripple-grid { grid-template-columns: 1fr; gap: 14px; }
+  .gauge-col { border-left: 0; padding-left: 0; border-top: 1px solid var(--ew-line); padding-top: 14px; }
+  #record .spread { grid-template-columns: 1fr; }
+  #record .pane.left { border-right: 0; border-bottom: 1px solid var(--ew-line); padding-left: 34px; }
+  #record .rec-head, #endscreen { padding-left: 34px; }
+  .folio .act-name { font-size: 17px; }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .leaf.in, .leaf.exit, .leaf.turn-out, .leaf.turn-in.in { transition: opacity var(--ew-dur-1) linear; transform: none !important; }
+  .leaf .sheen, .die.rolling, .die.land, .crit-ring.go, .corridor .ring, .corridor .letter,
+  .sweep-line::after, .send-btn.stamp, .big-gauge .delta.fly, .momentum .mp.on, .seal-mark.drop,
+  .compose-sheet .note .caret, .big-gauge .pctnum.pop, .chronicle .fadein { animation: none !important; }
+  .ew-track .ew-fill, .ammo .bar > i { transition: none; }
+  .big-gauge .delta.fly { opacity: 1; }
+}
+</style>
+</head>
+<body>
+<div id="desk">
+  <div id="codex" class="grain">
+    <header id="masthead">
+      <div class="mast-row">
+        <div class="wordmark" aria-hidden="true">
+          <svg viewBox="-52 -52 104 104">
+            <g class="ew-seal"><circle r="41"/><circle cx="41" cy="0" r="7.9"/><circle cx="37.46" cy="16.68" r="7.9"/><circle cx="27.43" cy="30.47" r="7.9"/><circle cx="12.67" cy="38.99" r="7.9"/><circle cx="-4.29" cy="40.78" r="7.9"/><circle cx="-20.5" cy="35.51" r="7.9"/><circle cx="-33.17" cy="24.1" r="7.9"/><circle cx="-40.1" cy="8.52" r="7.9"/><circle cx="-40.1" cy="-8.52" r="7.9"/><circle cx="-33.17" cy="-24.1" r="7.9"/><circle cx="-20.5" cy="-35.51" r="7.9"/><circle cx="-4.29" cy="-40.78" r="7.9"/><circle cx="12.67" cy="-38.99" r="7.9"/><circle cx="27.43" cy="-30.47" r="7.9"/><circle cx="37.46" cy="-16.68" r="7.9"/></g>
+            <g class="ew-cut" fill="none" stroke-linecap="round"><circle r="27" stroke-width="4"/><line x1="-27" y1="0" x2="27" y2="0" stroke-width="3"/><line x1="-23.4" y1="-13.5" x2="23.4" y2="13.5" stroke-width="4"/></g>
+            <g class="ew-cut-f"><path d="M0,-8.4 L2.9,-2.9 L8.4,0 L2.9,2.9 L0,8.4 L-2.9,2.9 L-8.4,0 L-2.9,-2.9 Z" transform="translate(0,-27)"/><circle r="4.8"/></g>
+          </svg>
+          <h1>Everwhen</h1>
+          <span class="tag">· rewrite history</span>
+        </div>
+        <div class="mast-objective">
+          <div class="obj-kicker ew-label ew-faint">The crusade</div>
+          <div class="obj-name" id="objName">Reach the Moon by 1900</div>
+        </div>
+        <div class="mast-controls">
+          <button class="icon-btn" id="btnRecord" title="The record" aria-label="Open the record">❖</button>
+          <button class="icon-btn" id="btnSound" title="Sound off" aria-label="Toggle sound">♪</button>
+          <button class="icon-btn" id="btnDark" title="Light / dark" aria-label="Toggle light or dark">◐</button>
+        </div>
+      </div>
+      <div class="mast-strip">
+        <div class="prog-thread">
+          <span class="pct" id="progPct">0%</span>
+          <div class="ew-track" id="progTrack"><div class="ew-fill" id="progFill"></div></div>
+          <span class="prog-need" id="progNeed">a history unwritten</span>
+        </div>
+        <div class="pips" id="pips" title="Dispatches"></div>
+      </div>
+    </header>
+
+    <div id="stage"><!-- leaves mount here --></div>
+
+    <!-- Summonable: the full record (Spine + Chronicle), reachable from any leaf. -->
+    <div id="record"></div>
+    <!-- Victory/defeat takeover. -->
+    <div id="endscreen"></div>
+  </div>
+
+  <!-- Showcase chrome (NOT part of the game UI): transport for the looping demo. -->
+  <div id="transport"></div>
+</div>
+<script>
+/* ══════════════════════════════════════════════════════════════════════════
+   THE CONDUCTOR  ·  a tiny state machine that walks a scripted run, leaf by
+   leaf. Each "beat" is one focused page. The looping showcase plays a complete
+   3-turn run to victory so it shows the real arc, not a single beat.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── DOM helper ───────────────────────────────────────────────────────────── */
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    if (k === 'class') e.className = attrs[k];
+    else if (k === 'html') e.innerHTML = attrs[k];
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), attrs[k]);
+    else if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+  }
+  for (const kid of kids.flat()) if (kid != null) e.append(kid.nodeType ? kid : document.createTextNode(kid));
+  return e;
+}
+const $ = (s) => document.querySelector(s);
+
+/* The brand seal as reusable markup (astrolabe stamped in wax). */
+const SEAL_SVG = `<svg viewBox="-52 -52 104 104" aria-hidden="true"><g class="ew-seal"><circle r="41"/><circle cx="41" cy="0" r="7.9"/><circle cx="37.46" cy="16.68" r="7.9"/><circle cx="27.43" cy="30.47" r="7.9"/><circle cx="12.67" cy="38.99" r="7.9"/><circle cx="-4.29" cy="40.78" r="7.9"/><circle cx="-20.5" cy="35.51" r="7.9"/><circle cx="-33.17" cy="24.1" r="7.9"/><circle cx="-40.1" cy="8.52" r="7.9"/><circle cx="-40.1" cy="-8.52" r="7.9"/><circle cx="-33.17" cy="-24.1" r="7.9"/><circle cx="-20.5" cy="-35.51" r="7.9"/><circle cx="-4.29" cy="-40.78" r="7.9"/><circle cx="12.67" cy="-38.99" r="7.9"/><circle cx="27.43" cy="-30.47" r="7.9"/><circle cx="37.46" cy="-16.68" r="7.9"/></g><g class="ew-cut" fill="none" stroke-linecap="round"><circle r="27" stroke-width="4"/><line x1="-27" y1="0" x2="27" y2="0" stroke-width="3"/><line x1="-23.4" y1="-13.5" x2="23.4" y2="13.5" stroke-width="4"/></g><g class="ew-cut-f"><path d="M0,-8.4 L2.9,-2.9 L8.4,0 L2.9,2.9 L0,8.4 L-2.9,2.9 L-8.4,0 L-2.9,-2.9 Z" transform="translate(0,-27)"/><circle r="4.8"/></g></svg>`;
+const seal = (cls) => { const s = h('span', { class: 'seal-mark ' + (cls || '') }); s.innerHTML = SEAL_SVG; return s; };
+
+/* A d20 silhouette (top-down icosahedron read) with a numbered center face. */
+function d20(num) {
+  return `<svg viewBox="0 0 100 100"><polygon class="edge" points="50,4 89.8,27 89.8,73 50,96 10.2,73 10.2,27"/>
+    <polygon class="facet" points="50,22 72,62 28,62"/>
+    <g class="facet"><line x1="50" y1="22" x2="50" y2="4"/><line x1="72" y1="62" x2="89.8" y2="27"/><line x1="72" y1="62" x2="89.8" y2="73"/><line x1="28" y1="62" x2="10.2" y2="27"/><line x1="28" y1="62" x2="10.2" y2="73"/><line x1="50" y1="96" x2="72" y2="62"/><line x1="50" y1="96" x2="28" y2="62"/></g>
+    <text class="num" x="50" y="55" font-size="26">${num}</text></svg>`;
+}
+
+/* ── THE SCRIPTED RUN ──────────────────────────────────────────────────────
+   A complete run: a solid Success, then a Critical Success, then a staked
+   Critical Success that wins — the game's emotional range in one loop. Numbers
+   are illustrative (no real mechanics), but every disclosure the real game
+   shows is present: craft tilt, the band table, the anachronism/chain reads,
+   the swing equation, momentum, the stake. */
+const RUN = {
+  objective: 'Reach the Moon by 1900',
+  anchor: 1900,
+  turns: [
+    {
+      figure: { name: 'Leonardo da Vinci', role: 'Polymath · 1452–1519', initial: 'L', place: 'Florence', year: 1503, from: 1452, to: 1519 },
+      message: 'Master Leonardo — flight is not flapping but a fixed wing cutting fast air. Build the great bird in earnest. The sky is a road, not a wall.',
+      wager: { cls: 'warn', txt: '⚡⚡ far ahead of his era' },
+      chain: { cls: 'mut', txt: '⏳ a lone seed — diffuse' },
+      staked: false,
+      judge: { grade: 'Sharp', reason: 'Vivid, period-true, and sharply aimed.', tilt: '+1', cls: 'ew-ok' },
+      dice: { roll: 14, band: 'Success', bandCls: 'ok', mag: 'strong', swing: '+15…+30%', crit: false },
+      reply: {
+        quote: 'I have oft dreamt it. If the wing be fixed and the air made swift, a man may yet ride it. I shall draw the great bird anew, and try it from the hill at Fiesole.',
+        action: 'Leonardo drafts a fixed-wing glider and tests it above Fiesole.'
+      },
+      ripple: { headline: 'Fixed-wing flight is conceived three centuries early.', detail: 'Sketches of a controllable glider circulate among Florentine engineers.', equation: '+18 base · ⚡⚡ far ahead → +22%', delta: 22 },
+      progFrom: 0, progTo: 22, momentum: 1,
+      chronicle: {
+        title: 'The Bird of Fiesole',
+        prose: ['In the spring of 1503 Leonardo turned from the flapping machines of his youth to a stranger thought: a wing held fixed, and speed enough to make the air solid beneath it. The drawings he left behind would not gather dust.',
+          'Within a generation, Florentine workshops spoke of the great bird not as a dream but as a problem of materials and nerve.']
+      }
+    },
+    {
+      figure: { name: 'Ada Lovelace', role: 'Mathematician · 1815–1852', initial: 'A', place: 'London', year: 1843, from: 1815, to: 1852 },
+      message: 'Lady Ada — your engine can reckon a flight path as it reckons numbers. Tabulate the air, and a machine may steer itself toward the heavens.',
+      wager: { cls: 'warn', txt: '⚡ ahead of her era' },
+      chain: { cls: 'ok', txt: '⏳ near a foothold — strong' },
+      staked: false,
+      judge: { grade: 'Masterful', reason: 'Precise, daring, and perfectly in her idiom.', tilt: '+2', cls: 'ew-ok' },
+      dice: { roll: 19, band: 'Critical Success', bandCls: 'ok', mag: 'crit', swing: '+30…+45%', crit: true },
+      reply: {
+        quote: 'Then the Engine shall not merely calculate — it shall navigate. I will draft the tables by which a craft corrects its own ascent, line by line.',
+        action: 'Ada writes the first guidance tables for self-correcting ascent.'
+      },
+      ripple: { headline: 'Calculated ascent — the first guidance tables are written.', detail: 'A method for steering a craft toward a fixed point in the sky enters the literature.', equation: '+38 base · ⚡ ahead → +34%', delta: 34 },
+      progFrom: 22, progTo: 56, momentum: 2,
+      chronicle: {
+        title: 'The Reckoning of the Air',
+        prose: ['By 1843 the great bird had a mind. Ada Lovelace, reading Leonardo’s fixed wing against her own Engine, saw that a flight could be computed the way a song could be woven on a loom — and that what is computed can be corrected.',
+          'The tables she drafted turned a leap of nerve into a question of arithmetic. The sky, once a road, was now a road with a map.']
+      }
+    },
+    {
+      figure: { name: 'Konstantin Tsiolkovsky', role: 'Rocket pioneer · 1857–1935', initial: 'K', place: 'Kaluga', year: 1895, from: 1857, to: 1935 },
+      message: 'Konstantin — the rocket equation is your ladder to the Moon. Stage the engines, shed the spent weight, and aim for the year 1900.',
+      wager: { cls: 'ok', txt: '✓ in period — steady ground' },
+      chain: { cls: 'ok', txt: '⏳ at the hinge — full force' },
+      staked: true,
+      judge: { grade: 'Masterful', reason: 'The exact lever, named in his own language.', tilt: '+2', cls: 'ew-ok' },
+      dice: { roll: 18, band: 'Critical Success', bandCls: 'ok', mag: 'crit', swing: '+30…+45%', crit: true },
+      reply: {
+        quote: 'Da. The equation does not forbid it — it asks only for patience and for stages. I will publish the method, that others may climb the ladder I have drawn.',
+        action: 'Tsiolkovsky publishes the staged-rocket method; a society forms to build it.'
+      },
+      ripple: { headline: 'A staged rocket reaches the Moon in 1899.', detail: 'Leonardo’s wing, Ada’s tables, and Konstantin’s stages close a four-century chain.', equation: '+44 base · ⚑ staked ×2 → +44% (capped to win)', delta: 44 },
+      progFrom: 56, progTo: 100, momentum: 3,
+      chronicle: {
+        title: 'The Ladder to the Moon',
+        prose: ['In Kaluga, a deaf schoolteacher did the last arithmetic. Tsiolkovsky’s rocket equation was not new to him — but the timing was, and the company. Staged engines, shedding their spent weight, climbing a ladder drawn across four centuries.',
+          'On a clear night in 1899 the Moon received its first visitor from Earth. History, asked politely and often, had bent the whole way.']
+      }
+    }
+  ]
+};
+
+/* ── Leaf renderers ───────────────────────────────────────────────────────── */
+function folio(numeral, name, sub) {
+  return h('div', { class: 'folio' },
+    h('span', { class: 'numeral' }, numeral),
+    h('span', { class: 'act-name' }, name),
+    sub ? h('span', { class: 'act-sub' }, sub) : null);
+}
+function leafShell(cls, ...kids) {
+  const l = h('div', { class: 'leaf ' + cls });
+  const sheen = h('div', { class: 'sheen' });
+  l.append(sheen, ...kids);
+  return l;
+}
+
+function leafMission() {
+  const crusades = [
+    { name: 'Reach the Moon by 1900', why: 'Pull spaceflight three centuries early.', sel: true },
+    { name: 'Prevent the Great War', why: 'Stay the guns of August.' },
+    { name: 'Advance Medicine by 300 Years', why: 'Hand the past its cures.' },
+    { name: '✦ Compose a fresh crusade…', why: 'Let the archive write one, live.' }
+  ];
+  const list = h('div', { class: 'crusades' },
+    crusades.map((c) => h('div', { class: 'crusade' + (c.sel ? ' sel' : '') },
+      h('span', { class: 'dot' }),
+      h('div', {},
+        h('div', { class: 'c-name' }, c.name),
+        h('div', { class: 'c-why' }, c.why)))));
+  return leafShell('mission',
+    folio('—', 'Choose your crusade'),
+    h('div', { class: 'leaf-body' },
+      h('div', { class: 'center-col', style: 'justify-content:flex-start; padding-top:6px;' },
+        h('p', { class: 'lede', style: 'max-width:46ch' }, 'You have five messages to bend all of history. Spend them on anyone, in any era. Choose the counterfactual you will chase.'),
+        list,
+        h('button', { class: 'send-btn', style: 'margin-top:6px' }, 'Begin the run'))));
+}
+
+function leafDispatch(t, n) {
+  const yrPct = ((t.figure.year - t.figure.from) / (t.figure.to - t.figure.from)) * 100;
+  const when = h('div', {},
+    h('div', { class: 'when-line' }, h('span', { class: 'ew-label' }, 'When'), h('span', {}, t.figure.place + ' · ' + t.figure.year)),
+    h('div', { class: 'when-rail' },
+      h('div', { class: 'track' }),
+      h('div', { class: 'span', style: 'left:0; right:0' }),
+      h('div', { class: 'head', style: 'left:' + yrPct + '%' }),
+      h('div', { class: 'yr', style: 'left:' + yrPct + '%' }, t.figure.year)),
+    h('div', { class: 'when-ends' }, h('span', {}, t.figure.from), h('span', {}, t.figure.to)));
+
+  const portrait = h('div', { class: 'fig-portrait' }, t.figure.initial);
+  const figcard = h('div', { class: 'figure-card' },
+    h('span', { class: 'ew-label' }, '1 · choose who & when'),
+    h('div', { class: 'fig-id' }, portrait, h('div', {},
+      h('div', { class: 'fig-name' }, t.figure.name),
+      h('div', { class: 'fig-role' }, t.figure.role))),
+    when);
+
+  const note = h('div', { class: 'note ew-input-look' });
+  note.innerHTML = t.message + '<span class="caret"></span>';
+  const used = t.message.length;
+  const sheet = h('div', { class: 'compose-sheet' },
+    h('span', { class: 'ew-label' }, '2 · write & send'),
+    note,
+    h('div', { class: 'ammo' },
+      h('div', { class: 'bar' }, h('i', { style: 'width:' + (used / 160 * 100) + '%' })),
+      h('span', { class: 'count' }, used + ' / 160')),
+    h('div', { class: 'reads' },
+      h('span', { class: 'chip ' + t.wager.cls }, t.wager.txt),
+      h('span', { class: 'chip ' + t.chain.cls }, t.chain.txt),
+      t.staked ? h('span', { class: 'chip bad' }, '⚑ last stand — staked') : null),
+    h('div', { class: 'send-row' },
+      (() => { const b = h('button', { class: 'send-btn' }); b.append(seal(), 'Seal & send'); return b; })(),
+      h('span', { class: 'ew-faint', style: 'font-size:11px' }, 'one message can bend the whole timeline')));
+
+  return leafShell('dispatch',
+    folio('I', 'Your dispatch', h('span', { class: 'ew-faint', style: 'font-size:11px' }, 'Dispatch ' + (n + 1) + ' of 5')),
+    h('div', { class: 'leaf-body' }, h('div', { class: 'compose-grid' }, figcard, sheet)));
+}
+
+function leafSending(t) {
+  const corridor = h('div', { class: 'corridor' });
+  for (let i = 0; i < 4; i++) corridor.append(h('div', { class: 'ring', style: 'animation-delay:' + (i * 0.6) + 's' }));
+  const letter = h('div', { class: 'letter' }, seal());
+  corridor.append(letter);
+  return leafShell('sending',
+    folio('II', 'The sending'),
+    h('div', { class: 'leaf-body' },
+      h('div', { class: 'center-col' },
+        corridor,
+        h('p', { class: 'lede' }, 'The dispatch travels to ' + t.figure.place + ', ' + t.figure.year + '.'),
+        h('div', { class: 'sweep-line' }),
+        h('p', { class: 'ew-faint', style: 'font-size:12px' }, 'History holds its breath…'))));
+}
+
+function leafJudgment(t) {
+  return leafShell('judgment',
+    folio('III', 'The craft is weighed'),
+    h('div', { class: 'leaf-body' },
+      h('div', { class: 'center-col' },
+        h('p', { class: 'quill-sweep' }, '✒ The Judge reads your hand — blind to your aim, weighing only how well you wrote.'),
+        h('div', { class: 'grade-big ' + t.judge.cls }, t.judge.grade),
+        h('p', { class: 'lede grade-reason' }, '“' + t.judge.reason + '”'),
+        h('div', { class: 'tilt-pill' }, t.judge.tilt + ' to the roll of fate'))));
+}
+
+function leafDice(t) {
+  const die = h('div', { class: 'die rolling' });
+  die.innerHTML = d20('');
+  const ring = h('div', { class: 'crit-ring ' + t.dice.bandCls });
+  const wrap = h('div', { class: 'die-wrap' }, ring, die);
+  const verdict = h('div', { class: 'verdict', style: 'opacity:0' });
+  const band = h('div', { class: 'band ' + t.dice.bandCls, style: 'opacity:0' }, t.dice.band + ' · ' + t.dice.swing);
+  const leaf = leafShell('dice',
+    folio('IV', 'The dice of fate'),
+    h('div', { class: 'leaf-body' },
+      h('div', { class: 'center-col' },
+        h('p', { class: 'ew-faint', style: 'font-size:12px' }, 'craft tilts the die ' + t.judge.tilt + ' · ' + (t.staked ? 'a staked throw — the swing doubles' : 'how fate is weighed, disclosed below')),
+        wrap, verdict, band)));
+  // the dice choreography is driven by the conductor via leaf._roll()
+  leaf._roll = () => {
+    die.classList.remove('rolling');
+    die.innerHTML = d20(t.dice.roll);
+    void die.offsetWidth;
+    die.classList.add('land', t.dice.bandCls, t.dice.mag);
+    if (t.dice.crit) { die.classList.add('glow'); ring.classList.add('go'); }
+    verdict.style.opacity = 1;
+    verdict.textContent = t.dice.roll + ' — ' + t.dice.band;
+    verdict.style.transition = 'opacity 280ms';
+    band.style.opacity = 1; band.style.transition = 'opacity 280ms 120ms';
+    SFX.thunk(t.dice.crit ? 1.3 : 1.0);
+    if (t.dice.crit) setTimeout(() => SFX.chime(), 120);
+  };
+  return leaf;
+}
+
+function leafReply(t) {
+  const portrait = h('div', { class: 'fig-portrait' }, t.figure.initial);
+  return leafShell('reply',
+    folio('V', t.figure.name.split(' ')[0] + ' answers'),
+    h('div', { class: 'leaf-body' },
+      h('div', { class: 'reply-grid' },
+        h('div', { class: 'who' }, portrait,
+          h('div', { class: 'nm' }, t.figure.name),
+          h('div', { class: 'yr' }, t.figure.place + ' · ' + t.figure.year)),
+        h('div', { class: 'letter' },
+          h('p', { class: 'quote' }, '“' + t.reply.quote + '”'),
+          h('div', { class: 'action' }, h('span', { class: 'glyph' }, '↳'), h('span', {}, t.reply.action))))));
+}
+
+function leafRipple(t) {
+  const pctnum = h('span', { class: 'pctnum' }, t.progFrom + '%');
+  const delta = h('span', { class: 'delta ' + (t.ripple.delta >= 0 ? 'up' : 'down') }, (t.ripple.delta >= 0 ? '+' : '') + t.ripple.delta + '%');
+  const arc = h('div', { class: 'arc' });
+  for (let i = 0; i < 4; i++) arc.append(h('div', { class: 'mp' + (i < t.momentum ? ' on' : '') }));
+  const stamp = seal('drop');
+  const sealRow = h('div', { class: 'spine-seal', style: 'opacity:0' }, stamp,
+    h('div', { class: 'node-line' }, h('span', { class: 'era' }, t.figure.year + ' · '), t.figure.name, ' sealed into the record'));
+  const stageLineNode = h('div', { class: 'stage-line' }, stageLine(t.progFrom));
+  const gauge = h('div', { class: 'gauge-col' },
+    h('span', { class: 'ew-label' }, 'The timeline shifts'),
+    h('div', { class: 'big-gauge' }, h('div', { class: 'pctrow' }, pctnum, delta), stageLineNode),
+    h('div', { class: 'momentum' }, h('span', { class: 'ew-label label' }, 'Momentum'), arc, h('span', { class: 'factor' }, '×' + (1 + 0.25 * t.momentum).toFixed(2) + ' to gains')),
+    sealRow);
+  const leaf = leafShell('ripple',
+    folio('VI', 'History bends'),
+    h('div', { class: 'leaf-body' },
+      h('div', { class: 'ripple-grid' },
+        h('div', { style: 'display:flex; flex-direction:column; justify-content:center' },
+          h('div', { class: 'headline' }, t.ripple.headline),
+          h('div', { class: 'detail' }, t.ripple.detail),
+          h('div', { class: 'equation', html: t.ripple.equation.replace(/(\+\d+%|\bwin\b)/g, '<b>$1</b>') })),
+        gauge)));
+  leaf._resolve = () => {
+    animateCount(pctnum, t.progFrom, t.progTo, 700, '%');
+    pctnum.classList.add('pop');
+    delta.classList.add('fly');
+    SFX.swoop(t.ripple.delta >= 0);
+    setTimeout(() => { stageLineNode.textContent = stageLine(t.progTo); }, 560);
+    setTimeout(() => { sealRow.style.opacity = 1; sealRow.style.transition = 'opacity 280ms'; SFX.stamp(); }, 520);
+  };
+  return leaf;
+}
+
+function stageLine(p) {
+  if (p >= 100) return 'History rewritten.';
+  if (p >= 75) return 'On the brink of a new history.';
+  if (p >= 50) return 'The new timeline takes hold.';
+  if (p >= 25) return 'History is bending.';
+  if (p >= 1) return 'The first cracks appear.';
+  return 'History stands unchanged.';
+}
+function animateCount(node, from, to, ms, suffix) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { node.textContent = to + suffix; return; }
+  const t0 = performance.now();
+  (function step(now) {
+    const k = Math.min(1, (now - t0) / ms);
+    const e = 1 - Math.pow(1 - k, 3);
+    node.textContent = Math.round(from + (to - from) * e) + suffix;
+    if (k < 1) requestAnimationFrame(step);
+  })(t0);
+}
+
+function leafChronicle(t, isFinal) {
+  const body = h('div', { class: 'ch-body fadein' }, t.chronicle.prose.map((p) => h('p', {}, p)));
+  return leafShell('chronicle',
+    folio('VII', 'The history, retold', h('span', { class: 'rewriting' }, h('span', { class: 'ew-spinner' }), 'rewritten')),
+    h('div', { class: 'leaf-body' },
+      h('div', { class: 'scroll' },
+        h('div', { class: 'ch-title fadein' }, t.chronicle.title),
+        body)));
+}
+/* ── Build the beat list (one focused page each) ──────────────────────────── */
+const BEATS = [];
+BEATS.push({ type: 'mission', dwell: 3400, prog: 0, spent: 0, act: -1 });
+RUN.turns.forEach((t, n) => {
+  const before = n, after = n + 1, isFinal = n === RUN.turns.length - 1;
+  if (isFinal) BEATS.push({ type: 'record', turn: n, dwell: 3800, prog: t.progFrom, spent: before, act: -1 });
+  BEATS.push({ type: 'dispatch', turn: n, dwell: 4400, prog: t.progFrom, spent: before, boundary: n > 0, stakeFinal: t.staked, act: 0 });
+  BEATS.push({ type: 'sending', turn: n, dwell: 2400, prog: t.progFrom, spent: after, stakeFinal: t.staked, act: 1 });
+  BEATS.push({ type: 'judgment', turn: n, dwell: 3000, prog: t.progFrom, spent: after, stakeFinal: t.staked, act: 2 });
+  BEATS.push({ type: 'dice', turn: n, dwell: 3700, prog: t.progFrom, spent: after, stakeFinal: t.staked, act: 3 });
+  BEATS.push({ type: 'reply', turn: n, dwell: 5400, prog: t.progFrom, spent: after, stakeFinal: t.staked, act: 4 });
+  BEATS.push({ type: 'ripple', turn: n, dwell: 4200, prog: { from: t.progFrom, to: t.progTo }, spent: after, stakeFinal: t.staked, act: 5 });
+  BEATS.push({ type: 'chronicle', turn: n, dwell: 6000, prog: t.progTo, spent: after, stakeFinal: t.staked, isFinal, act: 6 });
+});
+BEATS.push({ type: 'end', dwell: 8200, prog: 100, spent: 3, act: -1 });
+
+/* ── Chrome (the constant running head) ───────────────────────────────────── */
+function setProgress(p) {
+  const pct = Math.round(p);
+  $('#progPct').textContent = pct + '%';
+  $('#progFill').style.width = pct + '%';
+  const track = $('#progTrack');
+  track.classList.toggle('brink', pct >= 75 && pct < 100);
+  track.classList.toggle('win', pct >= 100);
+  const need = pct >= 100 ? 'history rewritten' : pct === 0 ? 'a history unwritten' : 'need +' + (100 - pct) + '% to win';
+  $('#progNeed').textContent = need;
+}
+function setPips(spent, stakeFinal) {
+  const wrap = $('#pips'); wrap.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const staked = stakeFinal && i === 2 && spent >= 3;
+    wrap.append(h('span', { class: 'pip' + (i < spent ? ' spent' : '') + (staked ? ' staked' : '') }));
+  }
+}
+function setActs(act) {
+  const wrap = $('#acts'); if (!wrap) return; wrap.innerHTML = '';
+  for (let i = 0; i < 7; i++) wrap.append(h('span', { class: 'actdot' + (i === act ? ' on' : '') }));
+}
+const ACT_NAMES = ['Dispatch', 'Sending', 'Judgment', 'Dice', 'Reply', 'Ripple', 'Chronicle'];
+
+/* ── Leaf mount / swap ────────────────────────────────────────────────────── */
+let currentLeaf = null;
+function mountLeaf(leaf, boundary) {
+  const stage = $('#stage');
+  const old = currentLeaf;
+  if (old) {
+    old.classList.remove('in');
+    old.classList.add(boundary ? 'turn-out' : 'exit');
+    setTimeout(() => old.remove(), boundary ? 660 : 320);
+  }
+  leaf.classList.add('enter');
+  if (boundary) leaf.classList.add('turn-in');
+  stage.append(leaf);
+  void leaf.offsetWidth;
+  requestAnimationFrame(() => { leaf.classList.remove('enter'); leaf.classList.add('in'); });
+  currentLeaf = leaf;
+  SFX.rustle();
+}
+
+function buildLeaf(beat) {
+  const t = RUN.turns[beat.turn];
+  switch (beat.type) {
+    case 'mission': return leafMission();
+    case 'dispatch': return leafDispatch(t, beat.turn);
+    case 'sending': return leafSending(t);
+    case 'judgment': return leafJudgment(t);
+    case 'dice': return leafDice(t);
+    case 'reply': return leafReply(t);
+    case 'ripple': return leafRipple(t);
+    case 'chronicle': return leafChronicle(t, beat.isFinal);
+  }
+}
+
+/* ── The record overlay (summon all history) ──────────────────────────────── */
+function landedThrough(turnIdx) { return RUN.turns.slice(0, turnIdx); }
+function renderRecord(turnIdx) {
+  const rec = $('#record');
+  const landed = landedThrough(turnIdx);
+  const nodes = landed.map((t) => h('div', { class: 'rec-node' },
+    h('div', { class: 'era' }, t.figure.year),
+    h('div', { class: 'ev' }, h('span', { class: 'fig' }, t.figure.name), h('div', { class: 'hl' }, t.ripple.headline)),
+    h('div', { class: 'swing ' + (t.ripple.delta >= 0 ? 'ew-ok' : 'ew-bad') }, (t.ripple.delta >= 0 ? '+' : '') + t.ripple.delta + '%')));
+  const last = landed[landed.length - 1];
+  rec.innerHTML = '';
+  rec.append(
+    h('div', { class: 'rec-head' }, seal(), h('span', { class: 't' }, 'The record'),
+      h('span', { class: 'ew-faint', style: 'font-size:11px' }, '— everything past & current, on demand'),
+      h('button', { class: 'icon-btn close' }, '✕')),
+    h('div', { class: 'spread' },
+      h('div', { class: 'pane left' }, h('div', { class: 'ew-label', style: 'margin-bottom:8px' }, 'The Spine · changes, in order'), nodes),
+      h('div', { class: 'pane right' }, h('div', { class: 'ew-label', style: 'margin-bottom:8px' }, 'The Chronicle · the timeline, retold'),
+        h('div', { class: 'ch-title', style: 'font-size:18px;margin-bottom:8px' }, last.chronicle.title),
+        h('div', { class: 'ch-body' }, last.chronicle.prose.map((p) => h('p', { style: 'margin:0 0 12px' }, p))))));
+}
+function showRecord(turnIdx) { renderRecord(turnIdx); $('#record').classList.add('show'); }
+function hideRecord() { $('#record').classList.remove('show'); }
+
+/* ── The end screen ───────────────────────────────────────────────────────── */
+function renderEnd() {
+  const es = $('#endscreen');
+  const fin = RUN.turns[RUN.turns.length - 1];
+  es.innerHTML = '';
+  es.append(
+    h('div', { class: 'verdict-kicker ew-label ew-ok' }, 'Victory'),
+    h('div', { class: 'verdict' }, 'History rewritten.'),
+    h('div', { class: 'ew-faint', style: 'font-size:13px' }, RUN.objective + ' — reached in three dispatches.'),
+    h('div', { class: 'epi-title' }, fin.chronicle.title + ' · the epilogue'),
+    h('div', { class: 'epi-body' }, fin.chronicle.prose.join(' ')),
+    h('div', { class: 'stats' },
+      h('div', { class: 'stat' }, h('div', { class: 'v' }, '3'), h('div', { class: 'k ew-label' }, 'Dispatches spent')),
+      h('div', { class: 'stat' }, h('div', { class: 'v' }, '2'), h('div', { class: 'k ew-label' }, 'Left unspent')),
+      h('div', { class: 'stat' }, h('div', { class: 'v ew-ok' }, '100%'), h('div', { class: 'k ew-label' }, 'The crusade')),
+      h('div', { class: 'stat' }, h('div', { class: 'v' }, '1899'), h('div', { class: 'k ew-label' }, 'Moon reached'))));
+}
+function showEnd() { renderEnd(); $('#endscreen').classList.add('show'); SFX.chime(); }
+function hideEnd() { $('#endscreen').classList.remove('show'); }
+
+/* ── Show a beat ──────────────────────────────────────────────────────────── */
+let idx = 0;
+function show(i) {
+  const beat = BEATS[i];
+  // overlays only belong to their own beats
+  if (beat.type !== 'record') hideRecord();
+  if (beat.type !== 'end') hideEnd();
+
+  // masthead
+  const p = typeof beat.prog === 'object' ? beat.prog.from : beat.prog;
+  setProgress(p);
+  setPips(beat.spent, beat.stakeFinal);
+  setActs(beat.act);
+  const cap = $('#cap');
+  if (cap) cap.innerHTML = beat.act >= 0
+    ? 'Turn <b>' + (beat.turn + 1) + '</b> · <b>' + ACT_NAMES[beat.act] + '</b>'
+    : '<b>' + (beat.type === 'mission' ? 'Choose your crusade' : beat.type === 'record' ? 'Consulting the record' : 'Victory') + '</b>';
+
+  if (beat.type === 'record') { showRecord(beat.turn); return; }
+  if (beat.type === 'end') { showEnd(); return; }
+
+  const leaf = buildLeaf(beat);
+  mountLeaf(leaf, beat.boundary);
+
+  // in-leaf choreography, timed off the settle
+  if (beat.type === 'dice') setTimeout(() => leaf._roll && leaf._roll(), 1150);
+  if (beat.type === 'ripple') setTimeout(() => { leaf._resolve && leaf._resolve(); setProgress(beat.prog.to); }, 760);
+}
+
+/* ── Transport / autoplay ─────────────────────────────────────────────────── */
+let playing = true, timer = null;
+function schedule() {
+  clearTimeout(timer);
+  if (!playing) return;
+  timer = setTimeout(() => { idx = (idx + 1) % BEATS.length; show(idx); schedule(); }, BEATS[idx].dwell);
+}
+function go(i) { clearTimeout(timer); idx = (i + BEATS.length) % BEATS.length; show(idx); schedule(); }
+function setPlaying(on) {
+  playing = on;
+  const b = $('#btnPlay'); if (b) b.textContent = on ? '❙❙' : '▶';
+  if (on) schedule(); else clearTimeout(timer);
+}
+
+function buildTransport() {
+  const tp = $('#transport');
+  tp.append(
+    h('button', { class: 'tbtn', title: 'Previous', onclick: () => go(idx - 1) }, '◀'),
+    h('button', { class: 'tbtn', id: 'btnPlay', title: 'Play / pause', onclick: () => setPlaying(!playing) }, '❙❙'),
+    h('button', { class: 'tbtn', title: 'Next', onclick: () => go(idx + 1) }, '▶'),
+    h('button', { class: 'tbtn', title: 'Restart run', onclick: () => go(0) }, '↻'),
+    h('div', { class: 'acts', id: 'acts' }),
+    h('div', { class: 'cap', id: 'cap' }),
+    h('span', { class: 'cap', style: 'margin-left:auto; opacity:.55' }, 'concept prototype · auto-looping · click ▶ to step'));
+}
+
+/* ── A small procedural soundscape (off by default), echoing the app's SFX ── */
+const SFX = (() => {
+  let ctx = null, on = false;
+  const ac = () => (ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)()));
+  function tone(freq, t0, dur, type, g0, g1) {
+    const c = ac(), o = c.createOscillator(), g = c.createGain();
+    o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(g0 == null ? 0.0001 : g0, t0);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0001, g1 == null ? 0.18 : g1), t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+    return o;
+  }
+  function noise(t0, dur, g0, hp) {
+    const c = ac(), n = c.createBufferSource(), buf = c.createBuffer(1, c.sampleRate * dur, c.sampleRate);
+    const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    n.buffer = buf; const f = c.createBiquadFilter(); f.type = hp ? 'highpass' : 'lowpass'; f.frequency.value = hp || 1200;
+    const g = c.createGain(); g.gain.setValueAtTime(g0 || 0.12, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    n.connect(f).connect(g).connect(c.destination); n.start(t0); n.stop(t0 + dur);
+  }
+  return {
+    get on() { return on; },
+    toggle() { on = !on; if (on) ac().resume && ac().resume(); return on; },
+    thunk(i) { if (!on) return; const t = ac().currentTime; tone(120, t, 0.18, 'sine', 0.3, 0.3 * (i || 1)); noise(t, 0.12, 0.18 * (i || 1), 900); },
+    stamp() { if (!on) return; const t = ac().currentTime; tone(90, t, 0.16, 'sine', 0.25, 0.25); noise(t + 0.01, 0.08, 0.14, 600); tone(420, t + 0.05, 0.05, 'square', 0.06, 0.06); },
+    chime() { if (!on) return; const t = ac().currentTime;[523, 659, 784].forEach((f, k) => tone(f, t + k * 0.08, 0.5, 'sine', 0.0001, 0.16)); },
+    swoop(up) { if (!on) return; const c = ac(), t = c.currentTime, o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(up ? 440 : 340, t); o.frequency.exponentialRampToValueAtTime(up ? 660 : 215, t + 0.22); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.14, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.26); o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.28); },
+    rustle() { if (!on) return; noise(ac().currentTime, 0.16, 0.05, 2400); }
+  };
+})();
+
+/* ── Controls ─────────────────────────────────────────────────────────────── */
+$('#btnDark').addEventListener('click', () => document.documentElement.classList.toggle('dark'));
+$('#btnSound').addEventListener('click', (e) => {
+  const on = SFX.toggle();
+  e.currentTarget.classList.toggle('on', on);
+  e.currentTarget.title = on ? 'Sound on' : 'Sound off';
+});
+$('#btnRecord').addEventListener('click', () => {
+  const showing = $('#record').classList.contains('show');
+  if (showing) { hideRecord(); setPlaying(true); }
+  else { setPlaying(false); const beat = BEATS[idx]; showRecord(beat.turn != null ? beat.turn + 1 : RUN.turns.length); }
+});
+// click the record overlay to dismiss it
+$('#record').addEventListener('click', () => { hideRecord(); if (BEATS[idx].type === 'record') go(idx + 1); });
+
+/* ── Boot ─────────────────────────────────────────────────────────────────── */
+buildTransport();
+$('#objName').textContent = RUN.objective;
+show(0);
+schedule();
+</script>
+</body>
+</html>
