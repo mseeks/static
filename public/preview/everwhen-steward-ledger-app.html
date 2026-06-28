@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Everwhen — The Steward's Ledger (ops app · pass 7)</title>
+<style>
+  /* ================================================================
+     Everwhen ops console — PASS 7 (polish + motion + emblems).
+     - Emojis replaced by a consistent hand-drawn SVG line-emblem set.
+     - Full-opacity "data ink": solid bars, richer fills, fuller ramps.
+     - Motion: staggered reveals, bars grow, rings/lines draw on,
+       numbers count up. All gated by prefers-reduced-motion.
+     ================================================================ */
+
+  :root {
+    --ew-fg:#2b241c; --ew-mut:#685c49; --ew-faint:#7d6f57;
+    --ew-hair:#c9b99c; --ew-line:#e6dcc8; --ew-bg:#faf6ee;
+    --ew-tint:#f1ebdd; --ew-accent:#b1532e;
+    --ew-ok:#466632; --ew-warn:#8a5a16; --ew-bad:#7c2d26;
+    --ew-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --ew-serif: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,ui-serif,serif;
+    --ew-sans: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --ew-dur-1:140ms; --ew-dur-2:280ms; --ew-dur-3:520ms;
+    --ew-ease:cubic-bezier(.2,.7,.3,1); --ew-ease-spring:cubic-bezier(.2,1.4,.4,1);
+    --ink: #fff;
+    --desk: radial-gradient(120% 110% at 50% 36%,
+      color-mix(in srgb, var(--ew-bg) 74%, #000) 0%,
+      color-mix(in srgb, var(--ew-bg) 50%, #000) 60%, #000 130%);
+    --codex-card: var(--ew-bg);
+    --codex-border: var(--ew-line);
+    --codex-shadow: 0 20px 54px -18px rgba(40,28,14,.6), 0 44px 96px -40px rgba(20,12,4,.66);
+  }
+  @media (prefers-color-scheme: dark) { :root:not(.light) {
+    --ew-fg:#f1e9da; --ew-mut:#bcb29b; --ew-faint:#9a8f78;
+    --ew-hair:#4a4133; --ew-line:#332b22; --ew-bg:#14110d;
+    --ew-tint:#1d1813; --ew-accent:#e2825a;
+    --ew-ok:#7cbb64; --ew-warn:#deaa52; --ew-bad:#e8967c;
+    --ink:#1a120c;
+    --desk: radial-gradient(120% 110% at 50% 36%,
+      color-mix(in srgb, var(--ew-bg) 60%, #000) 0%,
+      color-mix(in srgb, var(--ew-bg) 26%, #000) 55%, #000 120%);
+    --codex-card: color-mix(in srgb, var(--ew-bg) 86%, #f0e6d4);
+    --codex-border: color-mix(in srgb, var(--ew-line) 50%, #f0e6d4);
+    --codex-shadow: inset 0 1px 0 color-mix(in srgb,#f0e6d4 9%,transparent),
+      0 24px 66px -16px rgba(0,0,0,.78), 0 56px 120px -44px rgba(0,0,0,.86);
+  }}
+  html.dark {
+    --ew-fg:#f1e9da; --ew-mut:#bcb29b; --ew-faint:#9a8f78;
+    --ew-hair:#4a4133; --ew-line:#332b22; --ew-bg:#14110d;
+    --ew-tint:#1d1813; --ew-accent:#e2825a;
+    --ew-ok:#7cbb64; --ew-warn:#deaa52; --ew-bad:#e8967c;
+    --ink:#1a120c;
+    --desk: radial-gradient(120% 110% at 50% 36%,
+      color-mix(in srgb, var(--ew-bg) 60%, #000) 0%,
+      color-mix(in srgb, var(--ew-bg) 26%, #000) 55%, #000 120%);
+    --codex-card: color-mix(in srgb, var(--ew-bg) 86%, #f0e6d4);
+    --codex-border: color-mix(in srgb, var(--ew-line) 50%, #f0e6d4);
+    --codex-shadow: inset 0 1px 0 color-mix(in srgb,#f0e6d4 9%,transparent),
+      0 24px 66px -16px rgba(0,0,0,.78), 0 56px 120px -44px rgba(0,0,0,.86);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; font-family: var(--ew-sans); color: var(--ew-fg); font-size: 14px; }
+
+  /* emblems */
+  .ic { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor;
+    stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.14em; }
+  .ic .solid { fill: currentColor; stroke: none; }
+
+  .desk { position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px; padding: 20px; background: var(--desk); }
+  .codex { position: relative; width: min(96vw, 1240px); height: min(93vh, 850px);
+    background: var(--codex-card); border: 1px solid var(--codex-border); border-radius: 4px;
+    box-shadow: var(--codex-shadow); display: flex; flex-direction: column; overflow: hidden; }
+  .desk-foot { font-family: var(--ew-mono); font-size: 11px;
+    color: color-mix(in srgb, var(--ew-bg) 55%, var(--ew-faint)); letter-spacing: .04em; }
+  @media (prefers-color-scheme: dark) { .desk-foot { color: #6f6149; } }
+
+  .mast { flex: none; padding: 12px 18px 0; }
+  .mast-row { display: flex; align-items: center; gap: 12px; }
+  .ident { display: flex; align-items: center; gap: 8px; }
+  .seal { color: var(--ew-accent); width: 19px; height: 19px; }
+  .ident h1 { margin: 0; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
+  .ident .tag { font-size: 12px; color: var(--ew-faint); align-self: baseline; }
+  .mast-spacer { flex: 1; }
+  .mast-controls { display: flex; align-items: center; gap: 4px; }
+  .pill { font-family: var(--ew-mono); font-size: 11.5px; color: var(--ew-mut);
+    border: 1px solid var(--ew-line); border-radius: 4px; padding: 4px 9px; cursor: pointer;
+    background: transparent; transition: border-color var(--ew-dur-1), color var(--ew-dur-1); }
+  .pill:hover { color: var(--ew-fg); border-color: var(--ew-hair); }
+  .icon-btn { width: 32px; height: 32px; border-radius: 4px; border: 0; background: transparent;
+    color: var(--ew-faint); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    transition: color var(--ew-dur-1), background var(--ew-dur-1); }
+  .icon-btn .ic { width: 16px; height: 16px; }
+  .icon-btn:hover { color: var(--ew-fg); background: var(--ew-tint); }
+  .pass-badge { font-family: var(--ew-mono); font-size: 10px; color: var(--ew-faint);
+    border: 1px solid var(--ew-line); border-radius: 999px; padding: 2px 8px;
+    text-transform: uppercase; letter-spacing: .08em; }
+
+  .strip { display: flex; align-items: center; gap: 14px 22px; flex-wrap: wrap;
+    margin-top: 11px; padding-bottom: 10px; border-bottom: 1px solid var(--ew-line); }
+  .strip .unit { display: flex; align-items: center; gap: 7px; font-family: var(--ew-mono); font-size: 11.5px; color: var(--ew-mut); }
+  .strip .ul { text-transform: uppercase; letter-spacing: .09em; font-size: 9.5px; color: var(--ew-faint); font-family: var(--ew-sans); font-weight: 600; }
+  .track { width: 116px; height: 5px; background: var(--ew-line); border-radius: 999px; overflow: hidden; }
+  .track .fill { height: 100%; width: 74%; background: var(--ew-warn); border-radius: 999px; transform-origin: left; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .dot.ok{background:var(--ew-ok)} .dot.warn{background:var(--ew-warn)} .dot.bad{background:var(--ew-bad)}
+  .dot.mut{background:var(--ew-faint)} .dot.hollow{background:transparent;border:1.4px solid var(--ew-hair)}
+  .strip .right { margin-left: auto; }
+
+  .codex-body { flex: 1; display: flex; min-height: 0; }
+  nav.rail { flex: none; width: 214px; border-right: 1px solid var(--ew-line);
+    overflow-y: auto; display: flex; flex-direction: column; padding: 10px 0 8px; }
+  .rail-sec { font-size: 9.5px; text-transform: uppercase; letter-spacing: .11em; font-weight: 600;
+    color: var(--ew-faint); padding: 8px 16px 6px; }
+  .nav-item { display: flex; align-items: center; gap: 11px; padding: 9px 16px; cursor: pointer;
+    border-left: 2px solid transparent; color: var(--ew-mut);
+    transition: background var(--ew-dur-1), color var(--ew-dur-1); }
+  .nav-item:hover { background: var(--ew-tint); color: var(--ew-fg); }
+  .nav-item.active { background: var(--ew-tint); color: var(--ew-fg); border-left-color: var(--ew-accent); }
+  .nav-item .glyph { width: 18px; height: 18px; flex: none; color: var(--ew-faint); }
+  .nav-item:hover .glyph, .nav-item.active .glyph { color: var(--ew-accent); }
+  .nav-item .nm { display: flex; flex-direction: column; line-height: 1.25; flex: 1; min-width: 0; }
+  .nav-item .nm b { font-size: 13.5px; font-weight: 600; }
+  .nav-item .nm s { text-decoration: none; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--ew-faint); }
+  .nav-item.active .nm s { color: var(--ew-accent); }
+  .badge { font-family: var(--ew-mono); font-size: 10.5px; display: inline-flex; align-items: center; gap: 4px;
+    color: var(--ew-mut); flex: none; }
+  .rail-foot { margin-top: auto; padding: 12px 16px 4px; font-family: var(--ew-mono); font-size: 10.5px;
+    color: var(--ew-faint); border-top: 1px solid var(--ew-line); }
+
+  main.view { flex: 1; overflow-y: auto; padding: 20px 26px 34px; }
+  section.screen { display: none; }
+  section.screen.active { display: block; }
+
+  .view-head { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 4px; }
+  .view-head h2 { font-family: var(--ew-serif); font-weight: 600; font-size: 22px; margin: 0; letter-spacing: .01em;
+    display: inline-flex; align-items: center; gap: 9px; }
+  .view-head h2 .ic { width: 21px; height: 21px; color: var(--ew-accent); stroke-width: 1.6; }
+  .view-head .role { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--ew-accent); padding-bottom: 5px; }
+  .view-head .actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .view-blurb { color: var(--ew-mut); font-size: 13px; line-height: 1.6; margin: 0 0 18px; max-width: 80ch; }
+
+  .group { font-size: 10.5px; text-transform: uppercase; letter-spacing: .11em; font-weight: 600;
+    color: var(--ew-mut); padding-bottom: 7px; border-bottom: 1px solid var(--ew-line); margin: 28px 0 15px;
+    display: flex; align-items: center; gap: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px,1fr)); gap: 11px; }
+  .grid.w { grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); }
+  .card { background: var(--ew-tint); border: 1px solid var(--ew-line); border-radius: 3px;
+    box-shadow: inset 0 0 0 3px var(--ew-tint), inset 0 0 0 4px var(--ew-line);
+    padding: 13px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .card .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .label { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; color: var(--ew-mut); }
+  .val { font-family: var(--ew-mono); font-size: 22px; line-height: 1; }
+  .val .u { font-size: 12px; color: var(--ew-faint); }
+  .note { font-size: 11.5px; color: var(--ew-faint); }
+  .sub { font-family: var(--ew-mono); font-size: 11.5px; color: var(--ew-mut); }
+  .pos{color:var(--ew-ok)} .neg{color:var(--ew-bad)} .acc{color:var(--ew-accent)}
+
+  .tg { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
+  .tg.live{background:var(--ew-ok)} .tg.wire{background:var(--ew-warn)} .tg.new{background:var(--ew-bad)}
+
+  .tablewrap { border: 1px solid var(--ew-line); border-radius: 3px; overflow: hidden; background: var(--ew-tint); }
+  table.led { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.led th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--ew-faint); font-weight: 600; padding: 7px 11px; border-bottom: 1px solid var(--ew-line); }
+  table.led td { padding: 7px 11px; border-bottom: 1px solid var(--ew-line); }
+  table.led td.num { font-family: var(--ew-mono); text-align: right; }
+  table.led tr:last-child td { border-bottom: 0; }
+
+  .levers { border: 1px dashed var(--ew-hair); border-radius: 4px; padding: 2px 14px; }
+  .lever { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--ew-line); }
+  .lever:last-child { border-bottom: 0; }
+  .lever .lname { font-weight: 600; font-size: 13px; min-width: 142px; }
+  .lever .ldesc { color: var(--ew-faint); font-size: 11.5px; flex: 1 1 140px; }
+  .lever .ctrl { font-family: var(--ew-mono); font-size: 11.5px; color: var(--ew-mut); }
+  .seg { display: inline-flex; border: 1px solid var(--ew-line); border-radius: 999px; overflow: hidden; }
+  .seg span { padding: 3px 10px; font-size: 11px; color: var(--ew-faint); }
+  .seg span.on { background: var(--ew-accent); color: var(--ink); }
+  .toggle { width: 36px; height: 19px; border-radius: 999px; background: var(--ew-line); position: relative; flex: none; transition: background var(--ew-dur-2); }
+  .toggle.on { background: var(--ew-accent); }
+  .toggle::after { content:""; position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%; background: var(--ew-bg); transition: left var(--ew-dur-2) var(--ew-ease-spring); }
+  .toggle.on::after { left: 19px; }
+  .slider { width: 110px; height: 2px; background: var(--ew-line); position: relative; flex: none; }
+  .slider::after { content:""; position:absolute; top:-7px; left:60%; width:5px; height:16px; border-radius:1.5px; background: var(--ew-accent); }
+
+  .md { display: flex; gap: 14px; align-items: flex-start; }
+  .md-list { flex: 0 0 270px; border: 1px solid var(--ew-line); border-radius: 3px; overflow: hidden; }
+  .md-item { padding: 10px 12px; border-bottom: 1px solid var(--ew-line); cursor: pointer; border-left: 2px solid transparent;
+    transition: background var(--ew-dur-1); }
+  .md-item:last-child { border-bottom: 0; }
+  .md-item:hover { background: var(--ew-tint); }
+  .md-item.active { background: var(--ew-tint); border-left-color: var(--ew-accent); }
+  .md-item .h { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
+  .md-item .cat { font-weight: 600; }
+  .md-item .when { font-family: var(--ew-mono); font-size: 10.5px; color: var(--ew-faint); }
+  .md-item .ex { font-size: 11.5px; color: var(--ew-mut); margin-top: 3px; font-style: italic; }
+  .md-detail { flex: 1; min-width: 0; }
+  .dispatch { font-family: var(--ew-serif); font-size: 16px; line-height: 1.6; color: var(--ew-fg);
+    background: var(--ew-bg); border: 1px solid var(--ew-line); border-radius: 3px; padding: 14px 16px;
+    box-shadow: inset 0 0 0 3px var(--ew-bg), inset 0 0 0 4px var(--ew-line); }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 12.5px; margin-top: 12px; }
+  .kv dt { color: var(--ew-faint); text-transform: uppercase; font-size: 10px; letter-spacing: .08em; padding-top: 2px; }
+  .kv dd { margin: 0; font-family: var(--ew-mono); }
+  .row-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .btn-ghost { font: inherit; font-weight: 600; font-size: 12.5px; color: var(--ew-fg); background: transparent;
+    border: 1px solid var(--ew-line); border-radius: 3px; padding: 6px 13px; cursor: pointer; }
+  .btn-ghost:hover { border-color: var(--ew-hair); }
+  .btn-ghost.danger { color: var(--ew-bad); border-color: color-mix(in srgb, var(--ew-bad) 40%, var(--ew-line)); }
+
+  .ph { color: var(--ew-faint); font-style: italic; font-size: 12px; }
+  code { font-family: var(--ew-mono); font-size: .9em; color: var(--ew-mut); }
+
+  /* ================= CHARTS — full-opacity data ink ================= */
+  .chart { background: var(--ew-tint); border: 1px solid var(--ew-line); border-radius: 3px;
+    box-shadow: inset 0 0 0 3px var(--ew-tint), inset 0 0 0 4px var(--ew-line); padding: 14px 16px 15px; }
+  .chart h4 { margin: 0; font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--ew-mut); font-weight: 600; }
+  .chart .cap { font-size: 11px; color: var(--ew-faint); margin: 3px 0 13px; line-height: 1.45; }
+  .ch2 { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  .ch3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 11px; }
+  @media (max-width: 860px){ .ch2,.ch3 { grid-template-columns: 1fr; } }
+
+  .sparks { display: grid; grid-template-columns: repeat(auto-fill, minmax(212px,1fr)); gap: 11px; }
+  .spark-card { background: var(--ew-tint); border: 1px solid var(--ew-line); border-radius: 3px;
+    box-shadow: inset 0 0 0 3px var(--ew-tint), inset 0 0 0 4px var(--ew-line); padding: 12px 13px 11px; }
+  .spark-card .label { display:block; margin-bottom: 9px; }
+  .spark-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+  .spark-row .val { font-size: 20px; }
+  .spark-row .d { font-family: var(--ew-mono); font-size: 11px; margin-top: 5px; }
+  .spark { flex: none; }
+  .spark svg, .chart svg { display: block; }
+
+  .grid-line { stroke: var(--ew-line); stroke-width: 1; stroke-dasharray: 2 3; }
+  .series-rev { fill: none; stroke: var(--ew-accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .series-cogs { fill: none; stroke: var(--ew-faint); stroke-width: 1.5; stroke-dasharray: 3 2.5; stroke-linejoin: round; }
+  .area-rev { fill: var(--ew-accent); opacity: .30; }
+  .tick { font-family: var(--ew-mono); font-size: 9px; fill: var(--ew-faint); }
+  .dot-rev { fill: var(--ew-accent); }
+  @media (prefers-color-scheme: dark){ :root:not(.light) .area-rev { opacity: .42; } :root:not(.light) .grid-line { stroke: color-mix(in srgb, var(--ew-line) 40%, var(--ew-faint)); } }
+  html.dark .area-rev { opacity: .42; }
+  html.dark .grid-line { stroke: color-mix(in srgb, var(--ew-line) 40%, var(--ew-faint)); }
+
+  .chart-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 11px; color: var(--ew-mut); }
+  .chart-legend .li { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 11px; height: 11px; border-radius: 2px; flex: none; display: inline-block; }
+  .sw.line { height: 0; border-top: 2px solid var(--ew-accent); border-radius: 0; }
+  .sw.dash { height: 0; border-top: 2px dashed var(--ew-faint); border-radius: 0; }
+
+  .donut-wrap { display: flex; align-items: center; gap: 18px; }
+  .donut-c1 { font-family: var(--ew-mono); font-size: 11px; font-weight: 700; fill: var(--ew-fg); }
+  .donut-c2 { font-family: var(--ew-sans); font-size: 6.2px; fill: var(--ew-faint); text-transform: uppercase; letter-spacing: .12em; }
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; font-size: 12px; flex: 1; }
+  .donut-legend .li { display: flex; align-items: center; gap: 9px; }
+  .donut-legend .nm { color: var(--ew-mut); }
+  .donut-legend .v { font-family: var(--ew-mono); margin-left: auto; color: var(--ew-fg); }
+  .donut-legend .pc { font-family: var(--ew-mono); color: var(--ew-faint); width: 34px; text-align: right; }
+
+  .hbar { display: flex; height: 22px; border-radius: 3px; overflow: hidden; border: 1px solid var(--ew-line); }
+  .hbar span { display: block; height: 100%; transform-origin: left; }
+  .hbar-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 11px; font-size: 11.5px; color: var(--ew-mut); }
+  .hbar-legend .li { display: inline-flex; align-items: center; gap: 6px; }
+  .hbar-legend .v { font-family: var(--ew-mono); color: var(--ew-faint); }
+
+  .funnel { display: flex; flex-direction: column; gap: 8px; }
+  .funnel .step { display: flex; align-items: center; gap: 11px; }
+  .funnel .nm { width: 104px; flex: none; text-align: right; font-size: 12px; color: var(--ew-mut); }
+  .funnel .track2 { flex: 1; display: flex; align-items: center; gap: 9px; }
+  .funnel .bar { height: 27px; background: var(--ew-accent); color: var(--ink);
+    border-radius: 3px; display: flex; align-items: center; padding: 0 10px; font-family: var(--ew-mono);
+    font-size: 12.5px; min-width: 56px; transform-origin: left; font-weight: 600; }
+  .funnel .bar.blind { background: color-mix(in srgb,var(--ew-bad) 16%, transparent);
+    border: 1px solid color-mix(in srgb,var(--ew-bad) 45%,var(--ew-line)); color: var(--ew-mut); font-weight: 400; }
+  .funnel .conv { font-family: var(--ew-mono); font-size: 11px; color: var(--ew-faint); white-space: nowrap; }
+
+  table.cohort { border-collapse: separate; border-spacing: 3px; font-family: var(--ew-mono); font-size: 11px; }
+  table.cohort th { font-family: var(--ew-sans); font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: var(--ew-faint); font-weight: 600; padding: 2px 4px; }
+  table.cohort .rowlab { font-family: var(--ew-sans); font-size: 11px; color: var(--ew-mut); padding-right: 8px; text-align: right; white-space: nowrap; }
+  table.cohort .cell { width: 48px; height: 26px; text-align: center; border-radius: 2px; color: var(--ew-fg); }
+  table.cohort .cell.hot { color: var(--ink); }
+  table.cohort .cell.empty { background: transparent !important; }
+
+  .histo { display: flex; align-items: flex-end; gap: 7px; height: 104px; border-bottom: 1px solid var(--ew-line); }
+  .histo.d20 { gap: 2px; }
+  .histo .b { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 5px; }
+  .histo .bar { width: 100%; background: color-mix(in srgb, var(--ew-accent) 85%, transparent);
+    border-radius: 2px 2px 0 0; min-height: 2px; transform-origin: bottom; }
+  .histo .ct { font-family: var(--ew-mono); font-size: 9.5px; color: var(--ew-faint); }
+  .histo-x { display: flex; gap: 7px; margin-top: 5px; }
+  .histo-x .xl { flex: 1; text-align: center; font-family: var(--ew-mono); font-size: 9.5px; color: var(--ew-faint); }
+
+  .heat { display: grid; grid-template-columns: 30px repeat(8, 1fr); gap: 3px; align-items: center; }
+  .heat .rl { font-family: var(--ew-mono); font-size: 9.5px; color: var(--ew-faint); }
+  .heat .hc { height: 17px; border-radius: 2px; }
+  .heat .ch { grid-column: 2 / -1; display: grid; grid-template-columns: repeat(8,1fr); gap: 3px; margin-top: 3px; }
+  .heat .ch span { font-family: var(--ew-mono); font-size: 8.5px; color: var(--ew-faint); text-align: center; }
+  .heat-scale { display: flex; align-items: center; gap: 6px; margin-top: 11px; font-size: 10.5px; color: var(--ew-faint); }
+  .heat-scale .sc { width: 13px; height: 11px; border-radius: 2px; }
+
+  .stream { display: flex; flex-direction: column; }
+  .stream .ev { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--ew-line); font-size: 12.5px; }
+  .stream .ev:last-child { border-bottom: 0; }
+  .stream .ev .lbl { color: var(--ew-fg); }
+  .stream .ev .who { color: var(--ew-faint); font-family: var(--ew-mono); font-size: 11px; }
+  .stream .ev .amt { font-family: var(--ew-mono); color: var(--ew-mut); margin-left: auto; }
+  .stream .ev .t { font-family: var(--ew-mono); font-size: 10.5px; color: var(--ew-faint); width: 44px; text-align: right; }
+
+  /* radial ring + status board */
+  .ring-wrap { display: flex; align-items: center; gap: 14px; }
+  .ring-c1 { font-family: var(--ew-mono); font-size: 13px; font-weight: 700; fill: var(--ew-fg); }
+  .ring-c2 { font-family: var(--ew-mono); font-size: 5.6px; fill: var(--ew-faint); letter-spacing: .03em; }
+  .ring-wrap .sub { flex: 1; line-height: 1.45; }
+  .board { display: flex; flex-direction: column; }
+  .board .row { display: flex; align-items: center; gap: 11px; padding: 11px 2px; border-bottom: 1px solid var(--ew-line); }
+  .board .row:last-child { border-bottom: 0; }
+  .board .ic { width: 17px; height: 17px; color: var(--ew-accent); }
+  .board .bn { font-weight: 600; font-size: 13px; width: 120px; flex: none; line-height: 1.2; }
+  .board .bn s { display: block; text-decoration: none; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--ew-faint); font-weight: 400; }
+  .board .bmetric { font-family: var(--ew-mono); font-size: 12px; color: var(--ew-mut); flex: 1; min-width: 0; }
+  .board .bstat { margin-left: auto; font-family: var(--ew-mono); font-size: 11px; color: var(--ew-faint); display: flex; align-items: center; gap: 6px; flex: none; }
+
+  /* ===================== MOTION ===================== */
+  @keyframes ew-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+  @keyframes ew-grow-h { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  @keyframes ew-grow-w { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes ew-ring { from { stroke-dashoffset: 252; } }
+  @keyframes ew-donut { from { opacity: 0; transform: scale(.84) rotate(-10deg); } to { opacity: 1; transform: none; } }
+  @keyframes ew-cell { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: none; } }
+  .anim-in { animation: ew-rise 460ms var(--ew-ease) both; }
+  .screen.active .histo .bar { animation: ew-grow-h 640ms var(--ew-ease) both; }
+  .screen.active .funnel .bar, .screen.active .hbar span { animation: ew-grow-w 720ms var(--ew-ease) both; }
+  .screen.active .donut-wrap > svg { transform-origin: 58px 50px; animation: ew-donut 600ms var(--ew-ease-spring) both; }
+  .screen.active .ring-prog { animation: ew-ring 1000ms var(--ew-ease) both; }
+  .screen.active .heat .hc { animation: ew-cell 480ms var(--ew-ease) both; }
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after { animation-duration: 0s !important; animation-delay: 0s !important; transition-duration: 0s !important; }
+    .ring-prog { stroke-dashoffset: 0 !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- emblem definitions -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="ic-overview" viewBox="0 0 24 24"><path d="M12 2.4 L13.8 10.2 L21.6 12 L13.8 13.8 L12 21.6 L10.2 13.8 L2.4 12 L10.2 10.2 Z"/></symbol>
+  <symbol id="ic-watch" viewBox="0 0 24 24"><path d="M2.5 12 C6 7.4 18 7.4 21.5 12 C18 16.6 6 16.6 2.5 12 Z"/><circle cx="12" cy="12" r="2.7"/></symbol>
+  <symbol id="ic-treasury" viewBox="0 0 24 24"><ellipse cx="12" cy="7" rx="7.3" ry="2.6"/><path d="M4.7 7 V15 C4.7 16.5 8 17.7 12 17.7 C16 17.7 19.3 16.5 19.3 15 V7"/><path d="M4.7 11 C4.7 12.5 8 13.7 12 13.7 C16 13.7 19.3 12.5 19.3 11"/></symbol>
+  <symbol id="ic-observatory" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M12 1.3 V4.6 M12 19.4 V22.7 M1.3 12 H4.6 M19.4 12 H22.7"/><circle cx="12" cy="12" r="1.6"/></symbol>
+  <symbol id="ic-sentinel" viewBox="0 0 24 24"><path d="M12 2.6 L19.4 6 V11.6 C19.4 16.5 16 19.9 12 21.5 C8 19.9 4.6 16.5 4.6 11.6 V6 Z"/></symbol>
+  <symbol id="ic-heralds" viewBox="0 0 24 24"><path d="M6.4 3 V21"/><path d="M6.4 4.2 H18 L14.2 7.7 L18 11.2 H6.4"/></symbol>
+  <symbol id="ic-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path class="solid" d="M12 3.4 A8.6 8.6 0 0 1 12 20.6 Z"/></symbol>
+</svg>
+
+<div class="desk">
+  <div class="codex">
+
+    <header class="mast">
+      <div class="mast-row">
+        <span class="ident"><svg class="ic seal"><use href="#ic-overview"/></svg><h1>The Steward's Ledger</h1><span class="tag">· everwhen ops</span></span>
+        <span class="mast-spacer"></span>
+        <span class="pass-badge">pass 7 · polish</span>
+        <div class="mast-controls">
+          <button class="pill" title="time range (mock)">30d ▾</button>
+          <button class="pill" title="environment (mock)">prod ▾</button>
+          <button class="icon-btn" id="theme" title="toggle light / dark"><svg class="ic"><use href="#ic-theme"/></svg></button>
+        </div>
+      </div>
+      <div class="strip">
+        <span class="unit"><span class="ul">spend cap</span><span class="track"><span class="fill"></span></span>$18.40 / 25</span>
+        <span class="unit"><span class="dot ok"></span><span class="ul">runs</span>7 afoot · 3 drafts</span>
+        <span class="unit"><span class="dot ok"></span><span class="ul">anthropic</span>p95 3.9s</span>
+        <span class="unit"><span class="dot hollow"></span><span class="ul">openai</span>idle</span>
+        <span class="unit right"><span class="dot ok"></span>operational</span>
+      </div>
+    </header>
+
+    <div class="codex-body">
+      <nav class="rail" id="rail">
+        <div class="rail-sec">Ledgers</div>
+        <div class="nav-item active" data-screen="overview"><svg class="ic glyph"><use href="#ic-overview"/></svg><span class="nm"><b>Overview</b><s>the whole table</s></span></div>
+        <div class="nav-item" data-screen="watch"><svg class="ic glyph"><use href="#ic-watch"/></svg><span class="nm"><b>The Watch</b><s>running</s></span><span class="badge"><span class="dot warn"></span>74%</span></div>
+        <div class="nav-item" data-screen="treasury"><svg class="ic glyph"><use href="#ic-treasury"/></svg><span class="nm"><b>The Treasury</b><s>monetizing</s></span></div>
+        <div class="nav-item" data-screen="observatory"><svg class="ic glyph"><use href="#ic-observatory"/></svg><span class="nm"><b>The Observatory</b><s>monitoring</s></span></div>
+        <div class="nav-item" data-screen="sentinel"><svg class="ic glyph"><use href="#ic-sentinel"/></svg><span class="nm"><b>The Sentinel</b><s>moderating</s></span><span class="badge"><span class="dot bad"></span>6</span></div>
+        <div class="nav-item" data-screen="heralds"><svg class="ic glyph"><use href="#ic-heralds"/></svg><span class="nm"><b>The Heralds</b><s>marketing</s></span></div>
+        <div class="rail-foot">prod · v6f34581<br>14d uptime · mock data</div>
+      </nav>
+
+      <main class="view">
+
+        <!-- ===================== OVERVIEW ===================== -->
+        <section class="screen active" id="overview">
+          <div class="view-head"><h2><svg class="ic"><use href="#ic-overview"/></svg> The whole table</h2><span class="role">at a glance</span>
+            <span class="actions"><button class="pill">export ▾</button></span></div>
+          <p class="view-blurb">The executive read — top signal from every ledger, plus the two health rings the steward checks first. Drill into any ledger from the rail. Mock data.</p>
+
+          <div class="group">Today · with sparklines <span class="tg live"></span></div>
+          <div class="sparks">
+            <div class="spark-card"><span class="label">Runs today</span><div class="spark-row"><span><div class="val">312</div><div class="d pos">▲ 12%</div></span><span class="spark" data-spark="[188,205,222,210,245,260,248,275,290,270,295,310,300,318,312]"></span></div></div>
+            <div class="spark-card"><span class="label">Revenue today</span><div class="spark-row"><span><div class="val">$74</div><div class="d pos">▲ 8%</div></span><span class="spark" data-spark="[40,52,48,60,55,68,62,71,66,70,64,72,69,73,74]"></span></div></div>
+            <div class="spark-card"><span class="label">Completion</span><div class="spark-row"><span><div class="val">38<span class="u">%</span></div><div class="d">steady</div></span><span class="spark" data-spark="[36,37,35,38,39,38,40,38,37,39,38,40,39,38,38]"></span></div></div>
+            <div class="spark-card"><span class="label">Sentinel · 24h</span><div class="spark-row"><span><div class="val">6</div><div class="d">enforce</div></span><span class="spark" data-spark="[4,5,3,6,5,7,4,6,8,5,4,6,5,6,6]"></span></div></div>
+          </div>
+
+          <div class="group">Health</div>
+          <div class="ch3">
+            <div class="chart"><h4>Spend cap · 24h</h4><div class="cap">Model spend against the daily ceiling.</div>
+              <div class="ring-wrap">
+                <svg viewBox="0 0 100 100" width="92" height="92">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ew-line)" stroke-width="10"/>
+                  <circle class="ring-prog" cx="50" cy="50" r="40" fill="none" stroke="var(--ew-warn)" stroke-width="10" stroke-linecap="round" stroke-dasharray="186 65.3" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="49" text-anchor="middle" class="ring-c1">74%</text>
+                  <text x="50" y="59" text-anchor="middle" class="ring-c2">$18.40 / 25</text>
+                </svg>
+                <div class="sub">On pace to pause new runs ~9pm. The cap is a lever in The Watch.</div>
+              </div>
+            </div>
+            <div class="chart"><h4>Gross margin · 30d</h4><div class="cap">Revenue minus tracked model cost.</div>
+              <div class="ring-wrap">
+                <svg viewBox="0 0 100 100" width="92" height="92">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ew-line)" stroke-width="10"/>
+                  <circle class="ring-prog" cx="50" cy="50" r="40" fill="none" stroke="var(--ew-accent)" stroke-width="10" stroke-linecap="round" stroke-dasharray="186 65.3" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="49" text-anchor="middle" class="ring-c1">74%</text>
+                  <text x="50" y="59" text-anchor="middle" class="ring-c2">1,842 − 487</text>
+                </svg>
+                <div class="sub">Healthy for an AI-heavy game. Detail lives in The Treasury.</div>
+              </div>
+            </div>
+            <div class="chart"><h4>Lanes</h4><div class="cap">Model serving health right now.</div>
+              <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+                <div style="display:flex;align-items:center;gap:8px"><span class="dot ok"></span><span style="font-size:12.5px">Anthropic — serving</span><span class="sub" style="margin-left:auto">p95 3.9s</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><span class="dot hollow"></span><span style="font-size:12.5px">OpenAI — idle (fallback)</span><span class="sub" style="margin-left:auto">ready</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><span class="dot ok"></span><span style="font-size:12.5px">Error rate</span><span class="sub" style="margin-left:auto">0.4%</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="group">The ledgers</div>
+          <div class="chart" style="padding:4px 16px">
+            <div class="board">
+              <div class="row"><svg class="ic"><use href="#ic-watch"/></svg><span class="bn">The Watch<s>running</s></span><span class="bmetric">2 lanes · 8.3k calls/24h · 0.4% err</span><span class="bstat"><span class="dot warn"></span>spend 74%</span></div>
+              <div class="row"><svg class="ic"><use href="#ic-treasury"/></svg><span class="bn">The Treasury<s>monetizing</s></span><span class="bmetric">$1,842 / 30d · 74% margin · 272 buyers</span><span class="bstat"><span class="dot ok"></span>healthy</span></div>
+              <div class="row"><svg class="ic"><use href="#ic-observatory"/></svg><span class="bn">The Observatory<s>monitoring</s></span><span class="bmetric">2,180 runs · 38% complete · p95 6.1s</span><span class="bstat"><span class="dot ok"></span>nominal</span></div>
+              <div class="row"><svg class="ic"><use href="#ic-sentinel"/></svg><span class="bn">The Sentinel<s>moderating</s></span><span class="bmetric">enforce · 6 blocks/24h · 0 appeals</span><span class="bstat"><span class="dot ok"></span>quiet</span></div>
+              <div class="row"><svg class="ic"><use href="#ic-heralds"/></svg><span class="bn">The Heralds<s>marketing</s></span><span class="bmetric">96 shares · 28 referral signups · acq blind</span><span class="bstat"><span class="dot bad"></span>gap</span></div>
+            </div>
+          </div>
+
+          <div class="group">Wants attention</div>
+          <div class="grid w">
+            <div class="card"><div class="top"><span class="label acc">spend cap</span><span class="tg live"></span></div><div class="sub">74% at 4pm — on pace to pause new runs ~9pm.</div></div>
+            <div class="card"><div class="top"><span class="label acc">lane latency</span><span class="tg wire"></span></div><div class="sub">Anthropic <code>character</code> p95 3.9s (avg 2.4s).</div></div>
+            <div class="card"><div class="top"><span class="label acc">net-new gap</span><span class="tg new"></span></div><div class="sub">No acquisition analytics — funnel top blind.</div></div>
+          </div>
+        </section>
+
+        <!-- ===================== THE WATCH ===================== -->
+        <section class="screen" id="watch">
+          <div class="view-head"><h2><svg class="ic"><use href="#ic-watch"/></svg> The Watch</h2><span class="role">running</span>
+            <span class="actions"><button class="pill">24h ▾</button><button class="pill">logs ↗</button></span></div>
+          <p class="view-blurb">Keeping the service alive and the model lanes honest. Lane stats come from the per-call <code>[ai]</code> telemetry once it has a sink; health/version are net-new (no <code>/health</code> yet).</p>
+
+          <div class="group">Headline · with sparklines <span class="tg wire"></span></div>
+          <div class="sparks">
+            <div class="spark-card"><span class="label">Live runs</span><div class="spark-row"><span><div class="val">7 <span class="u">/ 3</span></div><div class="d">active / drafts</div></span><span class="spark" data-spark="[4,6,5,8,7,9,6,8,10,7,6,8,7,9,7]"></span></div></div>
+            <div class="spark-card"><span class="label">Calls / min</span><div class="spark-row"><span><div class="val">142</div><div class="d pos">▲ 6%</div></span><span class="spark" data-spark="[90,110,105,130,120,145,138,150,160,148,140,152,146,150,142]"></span></div></div>
+            <div class="spark-card"><span class="label">Error rate</span><div class="spark-row"><span><div class="val">0.4<span class="u">%</span></div><div class="d">within SLO</div></span><span class="spark" data-spark="[0.3,0.4,0.3,0.5,0.4,0.6,0.4,0.3,0.5,0.4,0.4,0.5,0.4,0.3,0.4]"></span></div></div>
+            <div class="spark-card"><span class="label">p95 latency</span><div class="spark-row"><span><div class="val">3.9<span class="u">s</span></div><div class="d neg">▲ 0.4s</div></span><span class="spark" data-spark="[3.2,3.4,3.3,3.6,3.5,3.8,3.4,3.6,3.9,3.6,3.5,3.7,3.6,3.4,3.9]"></span></div></div>
+          </div>
+
+          <div class="group">AI spend burn-down · 24h</div>
+          <div class="chart">
+            <h4>Cumulative model spend vs the daily cap</h4>
+            <div class="cap">When the line meets the cap, new runs pause. Same renderer as the Treasury — hours, dollars, a ceiling.</div>
+            <div data-trend id="burn" data-max="28" data-pre="$" data-yt="[0,12,25]" data-xt='["12a","6a","12p","6p","now"]' data-rev="[0.5,1.8,3.2,5.0,6.8,8.5,10.4,12.0,13.6,15.1,16.2,17.1,17.8,18.2,18.4]" data-cogs="[25,25,25,25,25,25,25,25,25,25,25,25,25,25,25]"></div>
+            <div class="chart-legend"><span class="li"><span class="sw line"></span>cumulative spend</span><span class="li"><span class="sw dash"></span>daily cap ($25)</span></div>
+          </div>
+
+          <div class="group">Model lanes <span class="tg wire"></span></div>
+          <div class="tablewrap"><table class="led">
+            <thead><tr><th>Lane</th><th>State</th><th class="num">p50</th><th class="num">p95</th><th class="num">err</th><th class="num">calls 24h</th><th class="num">cost 24h</th></tr></thead>
+            <tbody>
+              <tr><td>Anthropic <span class="acc">(primary)</span></td><td>serving</td><td class="num">1.3s</td><td class="num">3.9s</td><td class="num">0.4%</td><td class="num">8,210</td><td class="num">$17.90</td></tr>
+              <tr><td>OpenAI <span class="ph">(fallback)</span></td><td>idle</td><td class="num">—</td><td class="num">—</td><td class="num">0.0%</td><td class="num">120</td><td class="num">$0.50</td></tr>
+            </tbody></table></div>
+
+          <div class="group">Composition <span class="tg wire"></span></div>
+          <div class="ch2">
+            <div class="chart"><h4>Requests by model</h4><div class="cap">Tiered routing keeps most calls on cheap Haiku.</div>
+              <div class="donut-wrap">
+                <svg viewBox="0 0 100 100" width="116" height="116">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ew-line)" stroke-width="13"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ew-accent)" stroke-width="13" stroke-dasharray="155.8 95.5" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="color-mix(in srgb, var(--ew-accent) 72%, var(--ew-tint))" stroke-width="13" stroke-dasharray="90.5 160.8" stroke-dashoffset="-155.8" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="color-mix(in srgb, var(--ew-accent) 48%, var(--ew-tint))" stroke-width="13" stroke-dasharray="5.0 246.3" stroke-dashoffset="-246.3" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="49" text-anchor="middle" class="donut-c1">8,330</text>
+                  <text x="50" y="58" text-anchor="middle" class="donut-c2">calls 24h</text>
+                </svg>
+                <div class="donut-legend">
+                  <span class="li"><span class="sw" style="background:var(--ew-accent)"></span><span class="nm">Haiku 4.5</span><span class="pc">62%</span></span>
+                  <span class="li"><span class="sw" style="background:color-mix(in srgb,var(--ew-accent) 72%,var(--ew-tint))"></span><span class="nm">Sonnet 4.6</span><span class="pc">36%</span></span>
+                  <span class="li"><span class="sw" style="background:color-mix(in srgb,var(--ew-accent) 48%,var(--ew-tint))"></span><span class="nm">GPT-5.5 (fallback)</span><span class="pc">2%</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="chart"><h4>p95 latency by task</h4><div class="cap">Where the slow tail lives — the chronicler narrates the whole timeline.</div>
+              <div class="funnel">
+                <div class="step"><span class="nm" style="width:96px">chronicler</span><span class="track2"><span class="bar" style="width:92%">6.1s</span></span></div>
+                <div class="step"><span class="nm" style="width:96px">character</span><span class="track2"><span class="bar" style="width:59%">3.9s</span></span></div>
+                <div class="step"><span class="nm" style="width:96px">timeline</span><span class="track2"><span class="bar" style="width:42%">2.8s</span></span></div>
+                <div class="step"><span class="nm" style="width:96px">reach-rater</span><span class="track2"><span class="bar" style="width:17%">1.1s</span></span></div>
+                <div class="step"><span class="nm" style="width:96px">judge</span><span class="track2"><span class="bar" style="width:14%">0.9s</span></span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="group">Levers</div>
+          <div class="levers">
+            <div class="lever"><span class="lname">AI lane</span><span class="ldesc">force a lane / auto · today <code>EVERWHEN_AI_LANE</code></span><span class="seg"><span class="on">auto</span><span>anthropic</span><span>openai</span></span><span class="tg new"></span></div>
+            <div class="lever"><span class="lname">Spend cap</span><span class="ldesc">global $/window before new runs pause</span><span class="ctrl">$25 / 24h</span><span class="slider"></span><span class="tg new"></span></div>
+            <div class="lever"><span class="lname">Pause new runs</span><span class="ldesc">maintenance — finish in-flight only</span><span class="toggle"></span><span class="tg new"></span></div>
+            <div class="lever"><span class="lname">Moderation mode</span><span class="ldesc">shared with The Sentinel</span><span class="seg"><span>off</span><span>shadow</span><span class="on">enforce</span></span><span class="tg new"></span></div>
+          </div>
+        </section>
+
+        <!-- ===================== THE TREASURY ===================== -->
+        <section class="screen" id="treasury">
+          <div class="view-head"><h2><svg class="ic"><use href="#ic-treasury"/></svg> The Treasury</h2><span class="role">monetizing</span>
+            <span class="actions"><button class="pill">30d ▾</button></span></div>
+          <p class="view-blurb">The best-grounded ledger — real Stripe revenue against tracked model cost. A spread of hand-built instruments (inline SVG/CSS, no libraries) sampling the visualization vocabulary.</p>
+
+          <div class="group">Headline · with sparklines <span class="tg live"></span></div>
+          <div class="sparks">
+            <div class="spark-card"><span class="label">Revenue · 30d</span><div class="spark-row"><span><div class="val">$1,842</div><div class="d pos">▲ 18%</div></span><span class="spark" data-spark="[38,42,40,55,49,61,58,70,66,75,72,84,88,92,96]"></span></div></div>
+            <div class="spark-card"><span class="label">AI COGS · 30d</span><div class="spark-row"><span><div class="val">$487</div><div class="d">▲ 9%</div></span><span class="spark" data-spark="[10,11,10,14,13,16,15,18,17,20,19,22,23,24,25]"></span></div></div>
+            <div class="spark-card"><span class="label">Gross margin</span><div class="spark-row"><span><div class="val pos">74<span class="u">%</span></div><div class="d">steady</div></span><span class="spark" data-spark="[70,71,69,72,73,72,74,73,75,74,76,74,75,76,74]"></span></div></div>
+            <div class="spark-card"><span class="label">Margin / run</span><div class="spark-row"><span><div class="val">$0.53</div><div class="d pos">▲ 4¢</div></span><span class="spark" data-spark="[0.46,0.48,0.47,0.5,0.49,0.51,0.5,0.52,0.53,0.52,0.54,0.53,0.55,0.54,0.56]"></span></div></div>
+          </div>
+
+          <div class="group">Revenue vs model cost · 30d</div>
+          <div class="chart">
+            <h4>Daily revenue &amp; COGS</h4>
+            <div class="cap">The band between the lines is gross margin. Hairline gridlines, full-strength fill.</div>
+            <div data-trend id="trend" data-max="100" data-pre="$" data-yt="[0,50,100]" data-rev="[38,42,40,55,49,61,58,70,66,75,72,84,88,92,96]" data-cogs="[10,11,10,14,13,16,15,18,17,20,19,22,23,24,25]"></div>
+            <div class="chart-legend">
+              <span class="li"><span class="sw line"></span>revenue</span>
+              <span class="li"><span class="sw dash"></span>model cost (COGS)</span>
+            </div>
+          </div>
+
+          <div class="group">Composition &amp; flow <span class="tg live"></span></div>
+          <div class="ch2">
+            <div class="chart">
+              <h4>Revenue by pack</h4>
+              <div class="cap">Part-to-whole · a single-accent ramp keeps it on-palette.</div>
+              <div class="donut-wrap">
+                <svg viewBox="0 0 100 100" width="116" height="116">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ew-line)" stroke-width="13"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ew-accent)" stroke-width="13" stroke-dasharray="145.8 105.5" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="color-mix(in srgb, var(--ew-accent) 74%, var(--ew-tint))" stroke-width="13" stroke-dasharray="85.5 165.8" stroke-dashoffset="-145.8" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="color-mix(in srgb, var(--ew-accent) 50%, var(--ew-tint))" stroke-width="13" stroke-dasharray="20.1 231.2" stroke-dashoffset="-231.3" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="49" text-anchor="middle" class="donut-c1">$1,842</text>
+                  <text x="50" y="58" text-anchor="middle" class="donut-c2">30d</text>
+                </svg>
+                <div class="donut-legend">
+                  <span class="li"><span class="sw" style="background:var(--ew-accent)"></span><span class="nm">Courier</span><span class="pc">58%</span><span class="v">$1,070</span></span>
+                  <span class="li"><span class="sw" style="background:color-mix(in srgb,var(--ew-accent) 74%,var(--ew-tint))"></span><span class="nm">Envoy</span><span class="pc">34%</span><span class="v">$624</span></span>
+                  <span class="li"><span class="sw" style="background:color-mix(in srgb,var(--ew-accent) 50%,var(--ew-tint))"></span><span class="nm">Plenipotentiary</span><span class="pc">8%</span><span class="v">$150</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="chart">
+              <h4>Where the model cost goes</h4>
+              <div class="cap">COGS by AI task · stacked bar over the 13 tasks.</div>
+              <div class="hbar">
+                <span style="width:31%;background:var(--ew-accent)"></span>
+                <span style="width:24%;background:color-mix(in srgb,var(--ew-accent) 80%,var(--ew-tint))"></span>
+                <span style="width:22%;background:color-mix(in srgb,var(--ew-accent) 60%,var(--ew-tint))"></span>
+                <span style="width:6%;background:color-mix(in srgb,var(--ew-accent) 42%,var(--ew-tint))"></span>
+                <span style="width:17%;background:var(--ew-hair)"></span>
+              </div>
+              <div class="hbar-legend">
+                <span class="li"><span class="sw" style="background:var(--ew-accent)"></span>character <span class="v">31%</span></span>
+                <span class="li"><span class="sw" style="background:color-mix(in srgb,var(--ew-accent) 80%,var(--ew-tint))"></span>timeline <span class="v">24%</span></span>
+                <span class="li"><span class="sw" style="background:color-mix(in srgb,var(--ew-accent) 60%,var(--ew-tint))"></span>chronicler <span class="v">22%</span></span>
+                <span class="li"><span class="sw" style="background:color-mix(in srgb,var(--ew-accent) 42%,var(--ew-tint))"></span>judge <span class="v">6%</span></span>
+                <span class="li"><span class="sw" style="background:var(--ew-hair)"></span>9 others <span class="v">17%</span></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart" style="margin-top:11px">
+            <h4>Conversion funnel</h4>
+            <div class="cap">Anonymous play → email sign-in (required to buy) → first purchase → repeat.</div>
+            <div class="funnel">
+              <div class="step"><span class="nm">Anon players</span><span class="track2"><span class="bar" style="width:100%">2,940</span></span></div>
+              <div class="step"><span class="nm">Email sign-in</span><span class="track2"><span class="bar" style="width:42%">418</span><span class="conv">14% of anon</span></span></div>
+              <div class="step"><span class="nm">First purchase</span><span class="track2"><span class="bar" style="width:30%">272</span><span class="conv">65% of signed-in</span></span></div>
+              <div class="step"><span class="nm">Repeat buyer</span><span class="track2"><span class="bar" style="width:13%">61</span><span class="conv">22% of buyers</span></span></div>
+            </div>
+          </div>
+
+          <div class="group">Distributions &amp; cohorts <span class="tg wire"></span></div>
+          <div class="ch2">
+            <div class="chart">
+              <h4>Buyer retention by cohort</h4>
+              <div class="cap">% of a signup month's buyers still purchasing, months later.</div>
+              <table class="cohort">
+                <thead><tr><th></th><th>M0</th><th>M1</th><th>M2</th><th>M3</th><th>M4</th><th>M5</th></tr></thead>
+                <tbody>
+                  <tr><td class="rowlab">Jan</td>
+                    <td><div class="cell hot" style="background:var(--ew-accent)">100</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 62%,transparent)">62</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 48%,transparent)">48</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 41%,transparent)">41</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 37%,transparent)">37</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 34%,transparent)">34</div></td></tr>
+                  <tr><td class="rowlab">Feb</td>
+                    <td><div class="cell hot" style="background:var(--ew-accent)">100</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 58%,transparent)">58</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 45%,transparent)">45</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 38%,transparent)">38</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 33%,transparent)">33</div></td>
+                    <td><div class="cell empty"></div></td></tr>
+                  <tr><td class="rowlab">Mar</td>
+                    <td><div class="cell hot" style="background:var(--ew-accent)">100</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 66%,transparent)">66</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 51%,transparent)">51</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 44%,transparent)">44</div></td>
+                    <td><div class="cell empty"></div></td><td><div class="cell empty"></div></td></tr>
+                  <tr><td class="rowlab">Apr</td>
+                    <td><div class="cell hot" style="background:var(--ew-accent)">100</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 60%,transparent)">60</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 47%,transparent)">47</div></td>
+                    <td><div class="cell empty"></div></td><td><div class="cell empty"></div></td><td><div class="cell empty"></div></td></tr>
+                  <tr><td class="rowlab">May</td>
+                    <td><div class="cell hot" style="background:var(--ew-accent)">100</div></td>
+                    <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 64%,transparent)">64</div></td>
+                    <td><div class="cell empty"></div></td><td><div class="cell empty"></div></td><td><div class="cell empty"></div></td><td><div class="cell empty"></div></td></tr>
+                  <tr><td class="rowlab">Jun</td>
+                    <td><div class="cell hot" style="background:var(--ew-accent)">100</div></td>
+                    <td><div class="cell empty"></div></td><td><div class="cell empty"></div></td><td><div class="cell empty"></div></td><td><div class="cell empty"></div></td><td><div class="cell empty"></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="chart">
+              <h4>Spend per buyer</h4>
+              <div class="cap">Distribution of lifetime spend · most stop at one Courier.</div>
+              <div class="histo">
+                <div class="b"><span class="ct">132</span><div class="bar" style="height:100%"></div></div>
+                <div class="b"><span class="ct">41</span><div class="bar" style="height:31%"></div></div>
+                <div class="b"><span class="ct">50</span><div class="bar" style="height:38%"></div></div>
+                <div class="b"><span class="ct">27</span><div class="bar" style="height:20%"></div></div>
+                <div class="b"><span class="ct">18</span><div class="bar" style="height:14%"></div></div>
+                <div class="b"><span class="ct">22</span><div class="bar" style="height:17%"></div></div>
+              </div>
+              <div class="histo-x"><span class="xl">$5</span><span class="xl">$10</span><span class="xl">$12</span><span class="xl">$17</span><span class="xl">$24</span><span class="xl">$25+</span></div>
+            </div>
+          </div>
+
+          <div class="group">Spatial &amp; qualitative <span class="tg wire"></span></div>
+          <div class="ch2">
+            <div class="chart">
+              <h4>When purchases happen</h4>
+              <div class="cap">Activity heatmap · day of week × time of day (UTC).</div>
+              <div class="heat" data-heat="[[1,0,1,2,3,4,5,3],[1,1,1,2,3,5,6,4],[1,0,2,2,4,5,6,4],[2,1,1,3,4,6,7,5],[2,1,2,3,5,7,9,7],[3,2,2,3,5,8,10,8],[3,2,2,2,4,7,9,7]]"></div>
+              <div class="heat-scale">less
+                <span class="sc" style="background:color-mix(in srgb,var(--ew-accent) 22%,transparent)"></span>
+                <span class="sc" style="background:color-mix(in srgb,var(--ew-accent) 50%,transparent)"></span>
+                <span class="sc" style="background:color-mix(in srgb,var(--ew-accent) 76%,transparent)"></span>
+                <span class="sc" style="background:var(--ew-accent)"></span>more</div>
+            </div>
+            <div class="chart">
+              <h4>Live ledger</h4>
+              <div class="cap">Recent monetization events · the stream an operator watches.</div>
+              <div class="stream">
+                <div class="ev"><span class="dot" style="background:var(--ew-accent)"></span><span class="lbl">Envoy pack</span><span class="who">dev_3b0…1c</span><span class="amt">+$12.00</span><span class="t">4m</span></div>
+                <div class="ev"><span class="dot ok"></span><span class="lbl">Referral credit</span><span class="who">alde…r → quiet…</span><span class="amt">+1 run</span><span class="t">11m</span></div>
+                <div class="ev"><span class="dot hollow"></span><span class="lbl">Free trial</span><span class="who">dev_77a…9</span><span class="amt">+1 run</span><span class="t">12m</span></div>
+                <div class="ev"><span class="dot" style="background:var(--ew-accent)"></span><span class="lbl">Courier pack</span><span class="who">mae…@…</span><span class="amt">+$5.00</span><span class="t">23m</span></div>
+                <div class="ev"><span class="dot" style="background:var(--ew-accent)"></span><span class="lbl">Plenipotentiary</span><span class="who">dev_5c1…44</span><span class="amt">+$25.00</span><span class="t">38m</span></div>
+                <div class="ev"><span class="dot hollow"></span><span class="lbl">Free trial</span><span class="who">dev_9be…2</span><span class="amt">+1 run</span><span class="t">41m</span></div>
+                <div class="ev"><span class="dot" style="background:var(--ew-accent)"></span><span class="lbl">Courier pack</span><span class="who">dev_2aa…8</span><span class="amt">+$5.00</span><span class="t">1h</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="group">Levers</div>
+          <div class="levers">
+            <div class="lever"><span class="lname">Pack pricing</span><span class="ldesc">price &amp; run-count · today server constants</span><span class="ctrl">$5 · $12 · $25</span><span class="tg new"></span></div>
+            <div class="lever"><span class="lname">Free-trial runs</span><span class="ldesc">granted to a new device</span><span class="ctrl">1</span><span class="slider"></span><span class="tg new"></span></div>
+            <div class="lever"><span class="lname">Referral reward</span><span class="ldesc">runs to sharer · per-referrer cap</span><span class="ctrl">1 · cap 10</span><span class="tg new"></span></div>
+          </div>
+        </section>
+
+        <!-- ===================== THE OBSERVATORY ===================== -->
+        <section class="screen" id="observatory">
+          <div class="view-head"><h2><svg class="ic"><use href="#ic-observatory"/></svg> The Observatory</h2><span class="role">monitoring</span>
+            <span class="actions"><button class="pill">30d ▾</button></span></div>
+          <p class="view-blurb">Player behavior, performance, and game-balance health over time — the chart kit forged in the Treasury, dropped straight in. Most tiles are wire-up; the top of the funnel is net-new.</p>
+
+          <div class="group">Headline · with sparklines <span class="tg wire"></span></div>
+          <div class="sparks">
+            <div class="spark-card"><span class="label">Runs / day</span><div class="spark-row"><span><div class="val">312</div><div class="d pos">▲ 12%</div></span><span class="spark" data-spark="[188,205,222,210,245,260,248,275,290,270,295,310,300,318,312]"></span></div></div>
+            <div class="spark-card"><span class="label">Completion</span><div class="spark-row"><span><div class="val">38<span class="u">%</span></div><div class="d">steady</div></span><span class="spark" data-spark="[36,37,35,38,39,38,40,38,37,39,38,40,39,38,38]"></span></div></div>
+            <div class="spark-card"><span class="label">Win rate</span><div class="spark-row"><span><div class="val">11<span class="u">%</span></div><div class="d pos">▲ 1pt</div></span><span class="spark" data-spark="[9,10,9,11,10,12,11,10,12,11,11,12,10,11,11]"></span></div></div>
+            <div class="spark-card"><span class="label">Turn p95</span><div class="spark-row"><span><div class="val">6.1<span class="u">s</span></div><div class="d neg">▲ 0.3s</div></span><span class="spark" data-spark="[5.8,6.1,5.9,6.4,6.0,6.3,5.7,6.2,6.6,6.1,5.9,6.3,6.0,5.8,6.1]"></span></div></div>
+          </div>
+
+          <div class="group">Turn latency · p50 &amp; p95 · 30d</div>
+          <div class="chart">
+            <h4>Resolution latency</h4>
+            <div class="cap">Per-turn p95 (filled) over the p50 median — same renderer as the Treasury, seconds instead of dollars.</div>
+            <div data-trend id="lat" data-max="8" data-suf="s" data-yt="[0,4,8]" data-rev="[5.8,6.1,5.9,6.4,6.0,6.3,5.7,6.2,6.6,6.1,5.9,6.3,6.0,5.8,6.1]" data-cogs="[2.1,2.2,2.0,2.3,2.1,2.4,2.0,2.2,2.5,2.2,2.1,2.3,2.0,2.1,2.2]"></div>
+            <div class="chart-legend"><span class="li"><span class="sw line"></span>p95</span><span class="li"><span class="sw dash"></span>p50 (median)</span></div>
+          </div>
+
+          <div class="group">Distributions <span class="tg wire"></span></div>
+          <div class="ch2">
+            <div class="chart">
+              <h4>D20 fairness</h4>
+              <div class="cap">Distribution of the raw roll across all turns — should be roughly flat. Crit-fail (1) and crit (20) are marked.</div>
+              <div class="histo d20" id="d20"></div>
+              <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--ew-mono);font-size:9.5px;color:var(--ew-faint)"><span>1 · crit-fail</span><span>10</span><span>crit · 20</span></div>
+            </div>
+            <div class="chart">
+              <h4>Craft-grade distribution</h4>
+              <div class="cap">How the Judge scores dispatch craft — is "sharp" rare enough to feel earned?</div>
+              <div class="histo">
+                <div class="b"><span class="ct">12</span><div class="bar" style="height:29%"></div></div>
+                <div class="b"><span class="ct">41</span><div class="bar" style="height:100%"></div></div>
+                <div class="b"><span class="ct">33</span><div class="bar" style="height:80%"></div></div>
+                <div class="b"><span class="ct">14</span><div class="bar" style="height:34%"></div></div>
+              </div>
+              <div class="histo-x"><span class="xl">poor</span><span class="xl">fair</span><span class="xl">good</span><span class="xl">sharp</span></div>
+            </div>
+          </div>
+
+          <div class="group">Composition &amp; flow <span class="tg wire"></span></div>
+          <div class="ch2">
+            <div class="chart"><h4>Anachronism tiers</h4><div class="cap">How far players reach beyond a figure's era — the wager appetite.</div>
+              <div class="donut-wrap">
+                <svg viewBox="0 0 100 100" width="116" height="116">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ew-line)" stroke-width="13"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ew-accent)" stroke-width="13" stroke-dasharray="145.8 105.5" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="color-mix(in srgb, var(--ew-accent) 74%, var(--ew-tint))" stroke-width="13" stroke-dasharray="77.9 173.4" stroke-dashoffset="-145.8" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="color-mix(in srgb, var(--ew-accent) 50%, var(--ew-tint))" stroke-width="13" stroke-dasharray="27.6 223.7" stroke-dashoffset="-223.7" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="49" text-anchor="middle" class="donut-c1">1,820</text>
+                  <text x="50" y="58" text-anchor="middle" class="donut-c2">wagers</text>
+                </svg>
+                <div class="donut-legend">
+                  <span class="li"><span class="sw" style="background:var(--ew-accent)"></span><span class="nm">within era</span><span class="pc">58%</span></span>
+                  <span class="li"><span class="sw" style="background:color-mix(in srgb,var(--ew-accent) 74%,var(--ew-tint))"></span><span class="nm">reaching</span><span class="pc">31%</span></span>
+                  <span class="li"><span class="sw" style="background:color-mix(in srgb,var(--ew-accent) 50%,var(--ew-tint))"></span><span class="nm">bold</span><span class="pc">11%</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="chart"><h4>Win-rate by objective</h4><div class="cap">Flags crusades that are too easy or unfairly hard.</div>
+              <div class="funnel">
+                <div class="step"><span class="nm" style="width:152px">Reach the Moon 1900</span><span class="track2"><span class="bar" style="width:92%">22%</span></span></div>
+                <div class="step"><span class="nm" style="width:152px">Advance Medicine 300y</span><span class="track2"><span class="bar" style="width:67%">16%</span></span></div>
+                <div class="step"><span class="nm" style="width:152px">Prevent the Great War</span><span class="track2"><span class="bar" style="width:46%">11%</span></span></div>
+                <div class="step"><span class="nm" style="width:152px">Live-composed (avg)</span><span class="track2"><span class="bar" style="width:38%">9%</span></span></div>
+                <div class="step"><span class="nm" style="width:152px">Reunite a divided land</span><span class="track2"><span class="bar" style="width:29%">7%</span></span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart" style="margin-top:11px">
+            <h4>Player funnel · 7d</h4>
+            <div class="cap">Landing → run started → reached a verdict → won → shared. The top stays blind until acquisition analytics exist.</div>
+            <div class="funnel">
+              <div class="step"><span class="nm">Visits</span><span class="track2"><span class="bar blind" style="width:100%">— blind</span><span class="conv">net-new</span></span></div>
+              <div class="step"><span class="nm">Runs started</span><span class="track2"><span class="bar" style="width:74%">2,180</span></span></div>
+              <div class="step"><span class="nm">Completed</span><span class="track2"><span class="bar" style="width:38%">828</span><span class="conv">38%</span></span></div>
+              <div class="step"><span class="nm">Won</span><span class="track2"><span class="bar" style="width:13%">240</span><span class="conv">11%</span></span></div>
+              <div class="step"><span class="nm">Shared</span><span class="track2"><span class="bar" style="width:6%">96</span><span class="conv">4%</span></span></div>
+            </div>
+          </div>
+
+          <div class="group">Player retention <span class="tg wire"></span></div>
+          <div class="chart">
+            <h4>Return play by signup week</h4>
+            <div class="cap">% of a week's new players who start another run in later weeks. Players churn faster than buyers.</div>
+            <table class="cohort">
+              <thead><tr><th></th><th>W0</th><th>W1</th><th>W2</th><th>W3</th><th>W4</th></tr></thead>
+              <tbody>
+                <tr><td class="rowlab">Wk 1</td>
+                  <td><div class="cell hot" style="background:var(--ew-accent)">100</div></td>
+                  <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 40%,transparent)">34</div></td>
+                  <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 28%,transparent)">22</div></td>
+                  <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 24%,transparent)">17</div></td>
+                  <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 22%,transparent)">14</div></td></tr>
+                <tr><td class="rowlab">Wk 2</td>
+                  <td><div class="cell hot" style="background:var(--ew-accent)">100</div></td>
+                  <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 38%,transparent)">31</div></td>
+                  <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 27%,transparent)">20</div></td>
+                  <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 23%,transparent)">15</div></td>
+                  <td><div class="cell empty"></div></td></tr>
+                <tr><td class="rowlab">Wk 3</td>
+                  <td><div class="cell hot" style="background:var(--ew-accent)">100</div></td>
+                  <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 42%,transparent)">36</div></td>
+                  <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 30%,transparent)">24</div></td>
+                  <td><div class="cell empty"></div></td><td><div class="cell empty"></div></td></tr>
+                <tr><td class="rowlab">Wk 4</td>
+                  <td><div class="cell hot" style="background:var(--ew-accent)">100</div></td>
+                  <td><div class="cell" style="background:color-mix(in srgb,var(--ew-accent) 40%,transparent)">33</div></td>
+                  <td><div class="cell empty"></div></td><td><div class="cell empty"></div></td><td><div class="cell empty"></div></td></tr>
+                <tr><td class="rowlab">Wk 5</td>
+                  <td><div class="cell hot" style="background:var(--ew-accent)">100</div></td>
+                  <td><div class="cell empty"></div></td><td><div class="cell empty"></div></td><td><div class="cell empty"></div></td><td><div class="cell empty"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="group">Spatial &amp; qualitative <span class="tg wire"></span></div>
+          <div class="ch2">
+            <div class="chart">
+              <h4>When people play</h4>
+              <div class="cap">Activity heatmap · day of week × time of day (UTC).</div>
+              <div class="heat" data-heat="[[2,1,2,4,5,6,7,5],[2,1,2,4,5,6,8,5],[2,1,3,4,6,7,8,6],[3,2,2,4,6,7,9,6],[3,2,3,5,7,8,9,7],[4,3,3,5,7,9,10,8],[4,3,3,4,6,8,10,8]]"></div>
+              <div class="heat-scale">less
+                <span class="sc" style="background:color-mix(in srgb,var(--ew-accent) 22%,transparent)"></span>
+                <span class="sc" style="background:color-mix(in srgb,var(--ew-accent) 50%,transparent)"></span>
+                <span class="sc" style="background:color-mix(in srgb,var(--ew-accent) 76%,transparent)"></span>
+                <span class="sc" style="background:var(--ew-accent)"></span>more</div>
+            </div>
+            <div class="chart">
+              <h4>Live runs</h4>
+              <div class="cap">Recent resolutions ticking by · the operator's feel for the room.</div>
+              <div class="stream">
+                <div class="ev"><span class="dot" style="background:var(--ew-accent)"></span><span class="lbl">Won · Reach the Moon 1900</span><span class="who">3 msgs</span><span class="amt">aurelian-fox</span><span class="t">2m</span></div>
+                <div class="ev"><span class="dot hollow"></span><span class="lbl">Completed · Great War</span><span class="who">5 msgs</span><span class="amt">quiet-lantern</span><span class="t">6m</span></div>
+                <div class="ev"><span class="dot" style="background:var(--ew-accent)"></span><span class="lbl">Won · Advance Medicine</span><span class="who">4 msgs</span><span class="amt">ember-scribe</span><span class="t">9m</span></div>
+                <div class="ev"><span class="dot mut"></span><span class="lbl">Abandoned · turn 2</span><span class="who">dev_aa1…3</span><span class="amt"></span><span class="t">14m</span></div>
+                <div class="ev"><span class="dot hollow"></span><span class="lbl">Started · fresh crusade</span><span class="who">dev_77b…2</span><span class="amt"></span><span class="t">17m</span></div>
+                <div class="ev"><span class="dot" style="background:var(--ew-accent)"></span><span class="lbl">Won · Reach the Moon 1900</span><span class="who">2 msgs</span><span class="amt">legendary</span><span class="t">23m</span></div>
+                <div class="ev"><span class="dot hollow"></span><span class="lbl">Completed · Reunite a land</span><span class="who">4 msgs</span><span class="amt"></span><span class="t">31m</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="group">Alert thresholds</div>
+          <div class="levers">
+            <div class="lever"><span class="lname">Turn p95 alert</span><span class="ldesc">page when latency exceeds</span><span class="ctrl">8.0s</span><span class="slider"></span><span class="tg new"></span></div>
+            <div class="lever"><span class="lname">Error-rate alert</span><span class="ldesc">page when AI errors exceed</span><span class="ctrl">1.0%</span><span class="slider"></span><span class="tg new"></span></div>
+            <div class="lever"><span class="lname">Completion-drop alert</span><span class="ldesc">warn when completion falls below</span><span class="ctrl">30%</span><span class="slider"></span><span class="tg new"></span></div>
+          </div>
+        </section>
+
+        <!-- ===================== THE SENTINEL ===================== -->
+        <section class="screen" id="sentinel">
+          <div class="view-head"><h2><svg class="ic"><use href="#ic-sentinel"/></svg> The Sentinel</h2><span class="role">moderating</span>
+            <span class="actions"><span class="ctrl" style="font-family:var(--ew-mono);font-size:11.5px;color:var(--ew-mut)">mode</span><span class="seg"><span>off</span><span>shadow</span><span class="on">enforce</span></span></span></div>
+          <p class="view-blurb">Named for the game's own moderation classifier. Two stages already run on every input &amp; output (omni-moderation hard-block + the contextual Sentinel), emitting <code>[mod]</code> lines. Net-new is this review queue. Click an item to drill in.</p>
+          <div class="grid" style="margin-bottom:18px">
+            <div class="card"><div class="top"><span class="label">Blocks · 24h</span><span class="tg wire"></span></div><div class="val">6</div><div class="note">4 input · 2 output</div></div>
+            <div class="card"><div class="top"><span class="label">Hard-block rate</span><span class="tg wire"></span></div><div class="val">0.2<span class="u">%</span></div><div class="note">of dispatches</div></div>
+            <div class="card"><div class="top"><span class="label">Shadow would-block</span><span class="tg wire"></span></div><div class="val">11</div><div class="note">if enforce were off</div></div>
+            <div class="card"><div class="top"><span class="label">Appeals open</span><span class="tg new"></span></div><div class="val">0</div><div class="note">queue = net-new</div></div>
+          </div>
+          <div class="group">Review queue <span class="tg new"></span></div>
+          <div class="md">
+            <div class="md-list" id="mdlist">
+              <div class="md-item active" data-k="0"><div class="h"><span class="cat">violence / weapons</span><span class="when">12m</span></div><div class="ex">"Tell Caesar to march on…"</div></div>
+              <div class="md-item" data-k="1"><div class="h"><span class="cat">hate / harassment</span><span class="when">48m</span></div><div class="ex">"Write to Voltaire that…"</div></div>
+              <div class="md-item" data-k="2"><div class="h"><span class="cat">self-harm</span><span class="when">2h</span></div><div class="ex">"Ask Plath how she…"</div></div>
+              <div class="md-item" data-k="3"><div class="h"><span class="cat">illicit / cyber</span><span class="when">5h</span></div><div class="ex">"Have Turing detail…"</div></div>
+            </div>
+            <div class="md-detail">
+              <div class="dispatch" id="d-text">"Tell Caesar to march on Rome and put every senator who opposed him to the sword by dawn."</div>
+              <dl class="kv">
+                <dt>Stage</dt><dd id="d-stage">Sentinel (contextual)</dd>
+                <dt>Category</dt><dd id="d-cat">violence / weapons</dd>
+                <dt>Score</dt><dd id="d-score">0.71 · threshold 0.50</dd>
+                <dt>Figure</dt><dd id="d-fig">Julius Caesar · 49 BC</dd>
+                <dt>Disposition</dt><dd id="d-disp">blocked · dispatch refunded</dd>
+                <dt>Device</dt><dd id="d-dev">dev_8f21…a0 · 3 prior blocks</dd>
+              </dl>
+              <div class="row-actions">
+                <button class="btn-ghost">Uphold block</button>
+                <button class="btn-ghost">Overturn (allow)</button>
+                <button class="btn-ghost danger">Ban device</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== THE HERALDS ===================== -->
+        <section class="screen" id="heralds">
+          <div class="view-head"><h2><svg class="ic"><use href="#ic-heralds"/></svg> The Heralds</h2><span class="role">marketing</span>
+            <span class="actions"><button class="pill">30d ▾</button></span></div>
+          <p class="view-blurb">Spreading word and turning legendary runs into reach. Shares and referrals are real and tracked; the leaderboard is a query over runs. Acquisition sources are net-new — the top of the funnel stays blind.</p>
+
+          <div class="group">Headline · with sparklines <span class="tg live"></span></div>
+          <div class="sparks">
+            <div class="spark-card"><span class="label">Shares · 7d</span><div class="spark-row"><span><div class="val">96</div><div class="d pos">▲ 21%</div></span><span class="spark" data-spark="[8,11,9,13,12,15,14,16,13,15,12,16,14,15,17]"></span></div></div>
+            <div class="spark-card"><span class="label">Referral signups</span><div class="spark-row"><span><div class="val">28</div><div class="d pos">▲ 14%</div></span><span class="spark" data-spark="[2,3,2,4,3,4,3,5,4,4,3,5,4,4,5]"></span></div></div>
+            <div class="spark-card"><span class="label">Shares / win</span><div class="spark-row"><span><div class="val">0.40</div><div class="d pos">▲ 3%</div></span><span class="spark" data-spark="[0.31,0.34,0.32,0.36,0.35,0.38,0.36,0.39,0.37,0.39,0.38,0.40,0.39,0.40,0.40]"></span></div></div>
+            <div class="spark-card"><span class="label">Via referral</span><div class="spark-row"><span><div class="val">19<span class="u">%</span></div><div class="d">of new signups</div></span><span class="spark" data-spark="[12,14,13,16,15,17,16,18,17,18,17,19,18,19,19]"></span></div></div>
+          </div>
+
+          <div class="group">Shares &amp; referrals · 30d</div>
+          <div class="chart">
+            <h4>Daily shares &amp; referral signups</h4>
+            <div class="cap">Virality you can measure — the share-token mints and the /r/:token signups they drive.</div>
+            <div data-trend id="share-trend" data-max="20" data-yt="[0,10,20]" data-rev="[6,8,7,10,9,12,11,13,10,12,9,14,12,13,16]" data-cogs="[2,3,2,4,3,4,3,5,4,4,3,5,4,4,5]"></div>
+            <div class="chart-legend"><span class="li"><span class="sw line"></span>shares</span><span class="li"><span class="sw dash"></span>referral signups</span></div>
+          </div>
+
+          <div class="group">Composition &amp; flow <span class="tg live"></span></div>
+          <div class="ch2">
+            <div class="chart"><h4>Shares by surface</h4><div class="cap">Where the share comes from — the epilogue card leads.</div>
+              <div class="donut-wrap">
+                <svg viewBox="0 0 100 100" width="116" height="116">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ew-line)" stroke-width="13"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ew-accent)" stroke-width="13" stroke-dasharray="115.6 135.7" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="color-mix(in srgb, var(--ew-accent) 76%, var(--ew-tint))" stroke-width="13" stroke-dasharray="77.9 173.4" stroke-dashoffset="-115.6" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="color-mix(in srgb, var(--ew-accent) 56%, var(--ew-tint))" stroke-width="13" stroke-dasharray="37.7 213.6" stroke-dashoffset="-193.5" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="color-mix(in srgb, var(--ew-accent) 40%, var(--ew-tint))" stroke-width="13" stroke-dasharray="20.1 231.2" stroke-dashoffset="-231.2" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="49" text-anchor="middle" class="donut-c1">412</text>
+                  <text x="50" y="58" text-anchor="middle" class="donut-c2">shares 30d</text>
+                </svg>
+                <div class="donut-legend">
+                  <span class="li"><span class="sw" style="background:var(--ew-accent)"></span><span class="nm">Epilogue card</span><span class="pc">46%</span></span>
+                  <span class="li"><span class="sw" style="background:color-mix(in srgb,var(--ew-accent) 76%,var(--ew-tint))"></span><span class="nm">OG image</span><span class="pc">31%</span></span>
+                  <span class="li"><span class="sw" style="background:color-mix(in srgb,var(--ew-accent) 56%,var(--ew-tint))"></span><span class="nm">Leaderboard</span><span class="pc">15%</span></span>
+                  <span class="li"><span class="sw" style="background:color-mix(in srgb,var(--ew-accent) 40%,var(--ew-tint))"></span><span class="nm">Direct link</span><span class="pc">8%</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="chart"><h4>Virality funnel</h4><div class="cap">Won runs drive shares; the click-through stays blind until attribution exists.</div>
+              <div class="funnel">
+                <div class="step"><span class="nm">Wins · 7d</span><span class="track2"><span class="bar" style="width:100%">240</span></span></div>
+                <div class="step"><span class="nm">Shared</span><span class="track2"><span class="bar" style="width:40%">96</span><span class="conv">40% of wins</span></span></div>
+                <div class="step"><span class="nm">Clicks</span><span class="track2"><span class="bar blind" style="width:52%">— blind</span><span class="conv">net-new</span></span></div>
+                <div class="step"><span class="nm">New players</span><span class="track2"><span class="bar" style="width:24%">~58</span><span class="conv">est.</span></span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="group">Leaderboard · most legendary <span class="tg live"></span></div>
+          <div class="tablewrap"><table class="led">
+            <thead><tr><th>Run</th><th>Objective</th><th class="num">msgs</th><th class="num">final</th><th class="num">shares</th></tr></thead>
+            <tbody>
+              <tr><td>aurelian-fox</td><td>Reach the Moon by 1900</td><td class="num">2</td><td class="num">100%</td><td class="num">41</td></tr>
+              <tr><td>quiet-lantern</td><td>Prevent the Great War</td><td class="num">3</td><td class="num">100%</td><td class="num">28</td></tr>
+              <tr><td>ember-scribe</td><td>Advance Medicine 300y</td><td class="num">3</td><td class="num">100%</td><td class="num">17</td></tr>
+            </tbody></table></div>
+
+          <div class="group">Spatial &amp; qualitative <span class="tg wire"></span></div>
+          <div class="ch2">
+            <div class="chart"><h4>Most-played objectives</h4><div class="cap">What crusades players choose — curation fuel.</div>
+              <div class="funnel">
+                <div class="step"><span class="nm" style="width:150px">Prevent the Great War</span><span class="track2"><span class="bar" style="width:90%">31%</span></span></div>
+                <div class="step"><span class="nm" style="width:150px">Reach the Moon 1900</span><span class="track2"><span class="bar" style="width:70%">24%</span></span></div>
+                <div class="step"><span class="nm" style="width:150px">Live-composed</span><span class="track2"><span class="bar" style="width:64%">22%</span></span></div>
+                <div class="step"><span class="nm" style="width:150px">Advance Medicine 300y</span><span class="track2"><span class="bar" style="width:55%">19%</span></span></div>
+              </div>
+            </div>
+            <div class="chart"><h4>Recent shares</h4><div class="cap">Legendary runs going out into the world.</div>
+              <div class="stream">
+                <div class="ev"><span class="dot" style="background:var(--ew-accent)"></span><span class="lbl">Reach the Moon 1900</span><span class="who">aurelian-fox · OG</span><span class="amt">41 views</span><span class="t">2m</span></div>
+                <div class="ev"><span class="dot ok"></span><span class="lbl">Referral signup</span><span class="who">via quiet-lantern</span><span class="amt">+1 run</span><span class="t">11m</span></div>
+                <div class="ev"><span class="dot" style="background:var(--ew-accent)"></span><span class="lbl">Prevent the Great War</span><span class="who">quiet-lantern · card</span><span class="amt">28 views</span><span class="t">26m</span></div>
+                <div class="ev"><span class="dot" style="background:var(--ew-accent)"></span><span class="lbl">Advance Medicine</span><span class="who">ember-scribe · card</span><span class="amt">17 views</span><span class="t">44m</span></div>
+                <div class="ev"><span class="dot ok"></span><span class="lbl">Referral signup</span><span class="who">via aurelian-fox</span><span class="amt">+1 run</span><span class="t">52m</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="group">Levers</div>
+          <div class="levers">
+            <div class="lever"><span class="lname">Run of the day</span><span class="ldesc">feature a legendary run on the landing</span><span class="toggle on"></span><span class="tg new"></span></div>
+            <div class="lever"><span class="lname">Curate objectives</span><span class="ldesc">which crusades appear in the briefing</span><span class="ctrl ph">list editor</span><span class="tg new"></span></div>
+            <div class="lever"><span class="lname">Referral reward</span><span class="ldesc">runs to sharer · per-referrer cap</span><span class="ctrl">1 · cap 10</span><span class="tg new"></span></div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+  <div class="desk-foot">The Steward's Ledger · everwhen operations · pass 7 — full console · mock data</div>
+</div>
+
+<script>
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- chart renderers (static structure; motion layered on after) ----
+  function pts(data, w, h, padX, padT, padB, fixedMax) {
+    const max = fixedMax != null ? fixedMax : Math.max(...data);
+    const min = 0, rng = (max - min) || 1;
+    const x = i => padX + i * (w - 2 * padX) / (data.length - 1);
+    const y = v => (h - padB) - (v - min) / rng * (h - padT - padB);
+    return { x, y };
+  }
+  document.querySelectorAll('[data-spark]').forEach(el => {
+    const data = JSON.parse(el.dataset.spark);
+    const w = 118, h = 34, p = pts(data, w, h, 3, 4, 4);
+    const line = data.map((v, i) => (i ? 'L' : 'M') + p.x(i).toFixed(1) + ' ' + p.y(v).toFixed(1)).join(' ');
+    const area = 'M' + p.x(0).toFixed(1) + ' ' + (h - 4) + ' ' + data.map((v, i) => 'L' + p.x(i).toFixed(1) + ' ' + p.y(v).toFixed(1)).join(' ') + ' L' + p.x(data.length - 1).toFixed(1) + ' ' + (h - 4) + ' Z';
+    el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"><path d="${area}" class="area-rev"/><path d="${line}" class="series-rev"/><circle cx="${p.x(data.length-1).toFixed(1)}" cy="${p.y(data[data.length-1]).toFixed(1)}" r="2.1" class="dot-rev"/></svg>`;
+  });
+  function renderTrend(el) {
+    const A = JSON.parse(el.dataset.rev), B = JSON.parse(el.dataset.cogs);
+    const max = +(el.dataset.max || Math.max(...A));
+    const pre = el.dataset.pre || '', suf = el.dataset.suf || '';
+    const yt = JSON.parse(el.dataset.yt || '[]');
+    const xt = JSON.parse(el.dataset.xt || '["1 Jun","8","15","22","29"]');
+    const w = 900, h = 172, L = 34, R = 10, T = 12, Bm = 22;
+    const X = i => L + i * (w - L - R) / (A.length - 1);
+    const Y = v => (h - Bm) - v / max * (h - T - Bm);
+    const path = d => d.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+    const area = 'M' + X(0).toFixed(1) + ' ' + (h - Bm) + ' ' + A.map((v, i) => 'L' + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ') + ' L' + X(A.length - 1).toFixed(1) + ' ' + (h - Bm) + ' Z';
+    let g = ''; yt.forEach(v => { const y = Y(v).toFixed(1); g += `<line x1="${L}" y1="${y}" x2="${w-R}" y2="${y}" class="grid-line"/><text x="${L-5}" y="${(+y+3).toFixed(1)}" text-anchor="end" class="tick">${pre}${v}${suf}</text>`; });
+    let xl = ''; xt.forEach((lab, i) => { const xi = X(i * (A.length - 1) / (xt.length - 1)).toFixed(1); xl += `<text x="${xi}" y="${h-7}" text-anchor="middle" class="tick">${lab}</text>`; });
+    el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" style="display:block;width:100%;height:auto" preserveAspectRatio="xMidYMid meet">${g}<path d="${area}" class="area-rev"/><path d="${path(B)}" class="series-cogs"/><path d="${path(A)}" class="series-rev"/><circle cx="${X(A.length-1).toFixed(1)}" cy="${Y(A[A.length-1]).toFixed(1)}" r="2.6" class="dot-rev"/>${xl}</svg>`;
+  }
+  document.querySelectorAll('[data-trend]').forEach(renderTrend);
+  (function () {
+    const el = document.getElementById('d20'); if (!el) return;
+    const c = [51,49,53,50,55,48,52,54,50,53,49,51,56,47,52,50,54,49,51,53];
+    const mx = Math.max(...c);
+    el.innerHTML = c.map((v, i) => {
+      const n = i + 1;
+      const bg = n === 1 ? 'var(--ew-bad)' : (n === 20 ? 'var(--ew-accent)' : 'color-mix(in srgb,var(--ew-accent) 56%,transparent)');
+      return `<div class="b"><div class="bar" style="height:${(v/mx*100).toFixed(0)}%;background:${bg}"></div></div>`;
+    }).join('');
+  })();
+  document.querySelectorAll('[data-heat]').forEach(el => {
+    const rows = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const data = JSON.parse(el.dataset.heat);
+    let html = '';
+    rows.forEach((r, ri) => {
+      html += `<span class="rl">${r}</span>`;
+      data[ri].forEach(v => {
+        const pct = (v / 10 * 78 + 22).toFixed(0);
+        html += `<span class="hc" style="background:color-mix(in srgb, var(--ew-accent) ${pct}%, transparent)"></span>`;
+      });
+    });
+    html += `<span></span><span class="ch"><span>0–3</span><span>3–6</span><span>6–9</span><span>9–12</span><span>12–15</span><span>15–18</span><span>18–21</span><span>21–24</span></span>`;
+    el.innerHTML = html;
+  });
+
+  // ---- motion ----
+  function countUp(el) {
+    if (el.children.length) return;            // skip values with unit spans / slashes
+    const raw = el.textContent.trim();
+    const m = raw.match(/^(\$?)([\d,]+(?:\.\d+)?)(%?|s?|¢?)$/);
+    if (!m) return;
+    const pre = m[1], suf = m[3] || '', hasComma = m[2].includes(','), decs = (m[2].split('.')[1] || '').length;
+    const target = parseFloat(m[2].replace(/,/g, ''));
+    if (!isFinite(target)) return;
+    const dur = 580, t0 = performance.now();
+    const fmt = v => {
+      let s = decs ? v.toFixed(decs) : Math.round(v).toString();
+      if (hasComma) s = (+s).toLocaleString('en-US', decs ? { minimumFractionDigits: decs, maximumFractionDigits: decs } : {});
+      return pre + s + suf;
+    };
+    el.textContent = fmt(0);
+    (function tick(t) {
+      const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = fmt(target * e);
+      if (k < 1) requestAnimationFrame(tick); else el.textContent = raw;
+    })(t0);
+  }
+  function drawLines(scope) {
+    scope.querySelectorAll('.series-rev').forEach(p => {
+      const len = p.getTotalLength ? p.getTotalLength() : 0; if (!len) return;
+      p.style.transition = 'none';
+      p.style.strokeDasharray = len; p.style.strokeDashoffset = len;
+      p.getBoundingClientRect();
+      p.style.transition = 'stroke-dashoffset 900ms var(--ew-ease)';
+      requestAnimationFrame(() => { p.style.strokeDashoffset = '0'; });
+    });
+  }
+  function playIn(screen) {
+    if (reduce) return;
+    const blocks = screen.querySelectorAll('.spark-card, .chart, .card, .group, .tablewrap, .levers, .md');
+    blocks.forEach((b, i) => {
+      b.classList.remove('anim-in'); b.style.animationDelay = '';
+      void b.offsetWidth;
+      b.style.animationDelay = (i * 32) + 'ms';
+      b.classList.add('anim-in');
+    });
+    screen.querySelectorAll('.val').forEach(countUp);
+    drawLines(screen);
+  }
+
+  // ---- navigation ----
+  const items = document.querySelectorAll('.nav-item');
+  const screens = document.querySelectorAll('.screen');
+  items.forEach(it => it.addEventListener('click', () => {
+    items.forEach(x => x.classList.remove('active'));
+    screens.forEach(s => s.classList.remove('active'));
+    it.classList.add('active');
+    const scr = document.getElementById(it.dataset.screen);
+    scr.classList.add('active');
+    document.querySelector('.view').scrollTo({ top: 0 });
+    playIn(scr);
+  }));
+
+  document.getElementById('theme').addEventListener('click', () => {
+    const h = document.documentElement;
+    const dark = h.classList.contains('dark') || (!h.classList.contains('light') && matchMedia('(prefers-color-scheme: dark)').matches);
+    h.classList.remove('light','dark'); h.classList.add(dark ? 'light' : 'dark');
+  });
+
+  // ---- Sentinel master-detail ----
+  const RECORDS = [
+    { text: '"Tell Caesar to march on Rome and put every senator who opposed him to the sword by dawn."', stage: 'Sentinel (contextual)', cat: 'violence / weapons', score: '0.71 · threshold 0.50', fig: 'Julius Caesar · 49 BC', disp: 'blocked · dispatch refunded', dev: 'dev_8f21…a0 · 3 prior blocks' },
+    { text: '"Write to Voltaire that the [group] are vermin and history should be rid of them."', stage: 'Sentinel (contextual)', cat: 'hate / harassment', score: '0.83 · threshold 0.50', fig: 'Voltaire · 1759', disp: 'blocked · dispatch refunded', dev: 'dev_3b07…1c · 1 prior block' },
+    { text: '"Ask Plath how she would end her own life so I can do the same."', stage: 'hard-block (omni-moderation)', cat: 'self-harm / intent', score: '0.66 · threshold 0.50', fig: 'Sylvia Plath · 1962', disp: 'blocked · resources shown', dev: 'dev_d9aa…7e · 0 prior' },
+    { text: '"Have Turing detail a working exploit for [system] step by step."', stage: 'Sentinel (contextual)', cat: 'illicit / cyber', score: '0.74 · threshold 0.50', fig: 'Alan Turing · 1946', disp: 'blocked · dispatch refunded', dev: 'dev_5c12…44 · 2 prior blocks' },
+  ];
+  const mdItems = document.querySelectorAll('.md-item');
+  mdItems.forEach(it => it.addEventListener('click', () => {
+    mdItems.forEach(x => x.classList.remove('active'));
+    it.classList.add('active');
+    const r = RECORDS[+it.dataset.k];
+    document.getElementById('d-text').textContent = r.text;
+    document.getElementById('d-stage').textContent = r.stage;
+    document.getElementById('d-cat').textContent = r.cat;
+    document.getElementById('d-score').textContent = r.score;
+    document.getElementById('d-fig').textContent = r.fig;
+    document.getElementById('d-disp').textContent = r.disp;
+    document.getElementById('d-dev').textContent = r.dev;
+  }));
+
+  // initial reveal
+  playIn(document.querySelector('.screen.active'));
+</script>
+</body>
+</html>
