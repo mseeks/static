@@ -4,123 +4,132 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Everwhen PR #351 — before / after</title>
+<title>Everwhen PR #351 — The Illuminated Codex, before / after</title>
 <style>
-  :root { --bg:#faf6ee; --fg:#2b241c; --mut:#685c49; --line:#c9b99c; --accent:#b1532e; }
+  :root { --bg:#f4ecd8; --fg:#2a2118; --mut:#5f5240; --line:#cbb894; --accent:#96291c; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#14110d; --fg:#ece4d6; --mut:#b3a892; --line:#4a4133; --accent:#db7a4f; }
+    :root { --bg:#241d12; --fg:#e6dbc4; --mut:#b3a688; --line:#4d4128; --accent:#d96b4a; }
   }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--fg);
-         font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+         font:15px/1.55 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
          padding:32px 20px 80px; }
   main { max-width:1200px; margin:0 auto; }
-  h1 { font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
-       font-weight:400; font-size:28px; margin:0 0 4px; }
-  .sub { color:var(--mut); margin:0 0 36px; font-size:13px; }
-  .pair { margin:0 0 48px; }
-  .pair h2 { font-size:11px; text-transform:uppercase; letter-spacing:.1em;
-             color:var(--mut); font-weight:600; border-bottom:1px solid var(--line);
+  h1 { font-weight:400; font-size:30px; margin:0 0 4px; }
+  .sub { color:var(--mut); margin:0 0 40px; font-size:13.5px; font-style:italic; }
+  .pair { margin:0 0 52px; }
+  .pair h2 { font-size:12.5px; text-transform:uppercase; letter-spacing:.18em;
+             color:var(--accent); font-weight:600; border-bottom:1px solid var(--line);
              padding-bottom:6px; margin:0 0 4px; }
-  .pair p { margin:0 0 12px; color:var(--mut); font-size:13px; max-width:72ch; }
+  .pair p { margin:0 0 12px; color:var(--mut); font-size:13.5px; font-style:italic; max-width:76ch; }
   .row { display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap; }
   figure { margin:0; flex:1 1 300px; min-width:280px; }
-  figcaption { font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+  figcaption { font-size:11px; text-transform:uppercase; letter-spacing:.1em;
                color:var(--mut); margin-bottom:6px; }
   figcaption.after { color:var(--accent); }
-  img { width:100%; height:auto; border:1px solid var(--line); border-radius:3px; display:block; }
+  img { width:100%; height:auto; border:1px solid var(--line); border-radius:2px; display:block; }
   a { color:var(--accent); }
 </style>
 </head>
 <body>
 <main>
-  <h1>Everwhen PR #351 — before / after</h1>
-  <p class="sub">Ten of 88 captured pairs · before = base commit 558a2c2, after = design/visual-contrast-refinement ·
-     <a href="/read-thru/everwhen/pr-351-visual-contrast">code-level reading</a></p>
-
+  <h1>Everwhen — The Illuminated Codex</h1>
+  <p class="sub">Twelve of 88 captured pairs · before = the game as it shipped (main) · after = PR #351 ·
+     <a href="/read-thru/everwhen/pr-351-illuminated-codex">code-level reading</a></p>
   <div class="pair">
-    <h2>The climax — "History bends" · 375 dark</h2>
-    <p>The turn's swing now has a persistent, valence-inked statement ("THIS DISPATCH +22%"); the equation reads in real ink with a sign-classed result; the stamp is a deliberate hero instead of an accident; the gauges have visible grounds.</p>
+    <h2>The climax — history bends · phone, night</h2>
+    <p>From an admin split-pane to one proclamation: kicker, drop-cap headline, the sealed-at stamp, the engraved swing gauge with its rubric needle, the ledger ruler, and the equation as a dagger footnote.</p>
     <div class="row">
-      <figure><figcaption>before</figcaption><img src="pr-351-shots/before/375-dark-08-history-bends.png" alt="before"></figure>
-      <figure><figcaption class="after">after</figcaption><img src="pr-351-shots/after/375-dark-08-history-bends.png" alt="after"></figure>
+      <figure><figcaption>before — the game as it shipped</figcaption><img src="pr-351-shots/before/375-dark-08-history-bends.png" alt="before" loading="lazy"></figure>
+      <figure><figcaption class="after">after — the illuminated codex</figcaption><img src="pr-351-shots/after/375-dark-08-history-bends.png" alt="after" loading="lazy"></figure>
     </div>
   </div>
-
   <div class="pair">
-    <h2>The Record overlay · 375 dark</h2>
-    <p>Before: a viewport-sized seal buries the Spine and Chronicle (a CSS specificity tie plus a dev-mode multi-root fallthrough bug). After: a 26px header seal, the spine with its valence dot, readable reads.</p>
+    <h2>The dispatch — ready to send · desktop, day</h2>
+    <p>From a web form to a letter: rubricated addressee with dagger ties, writing on ruled feints, a true margin of glosses, and the matte pressed-wax seal on its ring.</p>
     <div class="row">
-      <figure><figcaption>before</figcaption><img src="pr-351-shots/before/375-dark-11-record.png" alt="before"></figure>
-      <figure><figcaption class="after">after</figcaption><img src="pr-351-shots/after/375-dark-11-record.png" alt="after"></figure>
+      <figure><figcaption>before — the game as it shipped</figcaption><img src="pr-351-shots/before/1280-light-04-dispatch-ready.png" alt="before" loading="lazy"></figure>
+      <figure><figcaption class="after">after — the illuminated codex</figcaption><img src="pr-351-shots/after/1280-light-04-dispatch-ready.png" alt="after" loading="lazy"></figure>
     </div>
   </div>
-
   <div class="pair">
-    <h2>The scoreboard — fresh dispatch · 1280 light</h2>
-    <p>Progress track and pips now have a visible denominator; the record toggle is a labeled pill; interactive boundaries use the new edge ink; the disabled seal is flat inert wax, not a ghost.</p>
+    <h2>The dispatch · phone, night</h2>
+    
     <div class="row">
-      <figure><figcaption>before</figcaption><img src="pr-351-shots/before/1280-light-03-dispatch-fresh.png" alt="before"></figure>
-      <figure><figcaption class="after">after</figcaption><img src="pr-351-shots/after/1280-light-03-dispatch-fresh.png" alt="after"></figure>
+      <figure><figcaption>before — the game as it shipped</figcaption><img src="pr-351-shots/before/375-dark-04-dispatch-ready.png" alt="before" loading="lazy"></figure>
+      <figure><figcaption class="after">after — the illuminated codex</figcaption><img src="pr-351-shots/after/375-dark-04-dispatch-ready.png" alt="after" loading="lazy"></figure>
     </div>
   </div>
-
   <div class="pair">
-    <h2>Fresh dispatch · 375 dark</h2>
+    <h2>The climax · desktop, day</h2>
+    
     <div class="row">
-      <figure><figcaption>before</figcaption><img src="pr-351-shots/before/375-dark-03-dispatch-fresh.png" alt="before"></figure>
-      <figure><figcaption class="after">after</figcaption><img src="pr-351-shots/after/375-dark-03-dispatch-fresh.png" alt="after"></figure>
+      <figure><figcaption>before — the game as it shipped</figcaption><img src="pr-351-shots/before/1280-light-08-history-bends.png" alt="before" loading="lazy"></figure>
+      <figure><figcaption class="after">after — the illuminated codex</figcaption><img src="pr-351-shots/after/1280-light-08-history-bends.png" alt="after" loading="lazy"></figure>
     </div>
   </div>
-
   <div class="pair">
-    <h2>Dispatch ready to send · 375 light</h2>
+    <h2>The dice of fate · desktop</h2>
+    <p>The engraved icosahedron over the Table of Fates — the struck band lights in its outcome ink with a marginal manicule.</p>
     <div class="row">
-      <figure><figcaption>before</figcaption><img src="pr-351-shots/before/375-light-04-dispatch-ready.png" alt="before"></figure>
-      <figure><figcaption class="after">after</figcaption><img src="pr-351-shots/after/375-light-04-dispatch-ready.png" alt="after"></figure>
+      <figure><figcaption>before — the game as it shipped</figcaption><img src="pr-351-shots/before/1280-light-06-the-dice-of-fate.png" alt="before" loading="lazy"></figure>
+      <figure><figcaption class="after">after — the illuminated codex</figcaption><img src="pr-351-shots/after/1280-light-06-the-dice-of-fate.png" alt="after" loading="lazy"></figure>
     </div>
   </div>
-
   <div class="pair">
-    <h2>The dice of fate · 1280 light</h2>
-    <p>The verdict speaks at display scale and self-reconciles (12 ✒+2 → 14 · Success); the struck legend band lights while the rest recede; the die is centerpiece-sized on its own leaf.</p>
+    <h2>The record · phone, night</h2>
+    <p>An inserted quire: the Spine as an inked timeline with wax nodes, the Chronicle, the Thread — one run state, no scrim ghost.</p>
     <div class="row">
-      <figure><figcaption>before</figcaption><img src="pr-351-shots/before/1280-light-06-the-dice-of-fate.png" alt="before"></figure>
-      <figure><figcaption class="after">after</figcaption><img src="pr-351-shots/after/1280-light-06-the-dice-of-fate.png" alt="after"></figure>
+      <figure><figcaption>before — the game as it shipped</figcaption><img src="pr-351-shots/before/375-dark-11-record.png" alt="before" loading="lazy"></figure>
+      <figure><figcaption class="after">after — the illuminated codex</figcaption><img src="pr-351-shots/after/375-dark-11-record.png" alt="after" loading="lazy"></figure>
     </div>
   </div>
-
   <div class="pair">
-    <h2>The climax · 1280 dark</h2>
+    <h2>Choosing a crusade · desktop</h2>
+    <p>An illuminated table of contents: rubric numerals, engraved roundels, a drawn bracket on the chosen entry.</p>
     <div class="row">
-      <figure><figcaption>before</figcaption><img src="pr-351-shots/before/1280-dark-08-history-bends.png" alt="before"></figure>
-      <figure><figcaption class="after">after</figcaption><img src="pr-351-shots/after/1280-dark-08-history-bends.png" alt="after"></figure>
+      <figure><figcaption>before — the game as it shipped</figcaption><img src="pr-351-shots/before/1280-light-02b-mission-selected.png" alt="before" loading="lazy"></figure>
+      <figure><figcaption class="after">after — the illuminated codex</figcaption><img src="pr-351-shots/after/1280-light-02b-mission-selected.png" alt="after" loading="lazy"></figure>
     </div>
   </div>
-
   <div class="pair">
-    <h2>Mission select, a crusade chosen · 1280 light</h2>
-    <p>Selection was a 1.1:1 tint and a 1.8:1 hollow ring; it is now a 3px terracotta rule, a warm accent wash, and 2px rings on the unchosen.</p>
+    <h2>Victory — the colophon · phone, night</h2>
+    <p>The seal strikes in gold-warmed wax between laurels; the epilogue reads with its illuminated initial; the run's figures print in serif.</p>
     <div class="row">
-      <figure><figcaption>before</figcaption><img src="pr-351-shots/before/1280-light-02b-mission-selected.png" alt="before"></figure>
-      <figure><figcaption class="after">after</figcaption><img src="pr-351-shots/after/1280-light-02b-mission-selected.png" alt="after"></figure>
+      <figure><figcaption>before — the game as it shipped</figcaption><img src="pr-351-shots/before/375-dark-21-end-victory.png" alt="before" loading="lazy"></figure>
+      <figure><figcaption class="after">after — the illuminated codex</figcaption><img src="pr-351-shots/after/375-dark-21-end-victory.png" alt="after" loading="lazy"></figure>
     </div>
   </div>
-
   <div class="pair">
-    <h2>The sending — held breath · 375 dark</h2>
+    <h2>Defeat · phone, night</h2>
+    
     <div class="row">
-      <figure><figcaption>before</figcaption><img src="pr-351-shots/before/375-dark-20-sending.png" alt="before"></figure>
-      <figure><figcaption class="after">after</figcaption><img src="pr-351-shots/after/375-dark-20-sending.png" alt="after"></figure>
+      <figure><figcaption>before — the game as it shipped</figcaption><img src="pr-351-shots/before/375-dark-22-end-defeat.png" alt="before" loading="lazy"></figure>
+      <figure><figcaption class="after">after — the illuminated codex</figcaption><img src="pr-351-shots/after/375-dark-22-end-defeat.png" alt="after" loading="lazy"></figure>
     </div>
   </div>
-
   <div class="pair">
-    <h2>Defeat · 375 dark</h2>
-    <p>The seal that failed to take: cold faint wax, no glow; the final percentage in the new blood-red bad ink, readable at 5:1.</p>
+    <h2>The sending — the magic act · phone, night</h2>
+    <p>A sealed paper letter sinking into the page through tonal ink ripples — the one honest wait.</p>
     <div class="row">
-      <figure><figcaption>before</figcaption><img src="pr-351-shots/before/375-dark-22-end-defeat.png" alt="before"></figure>
-      <figure><figcaption class="after">after</figcaption><img src="pr-351-shots/after/375-dark-22-end-defeat.png" alt="after"></figure>
+      <figure><figcaption>before — the game as it shipped</figcaption><img src="pr-351-shots/before/375-dark-20-sending.png" alt="before" loading="lazy"></figure>
+      <figure><figcaption class="after">after — the illuminated codex</figcaption><img src="pr-351-shots/after/375-dark-20-sending.png" alt="after" loading="lazy"></figure>
+    </div>
+  </div>
+  <div class="pair">
+    <h2>A fresh dispatch · desktop, night</h2>
+    
+    <div class="row">
+      <figure><figcaption>before — the game as it shipped</figcaption><img src="pr-351-shots/before/1280-dark-03-dispatch-fresh.png" alt="before" loading="lazy"></figure>
+      <figure><figcaption class="after">after — the illuminated codex</figcaption><img src="pr-351-shots/after/1280-dark-03-dispatch-fresh.png" alt="after" loading="lazy"></figure>
+    </div>
+  </div>
+  <div class="pair">
+    <h2>The threshold · desktop</h2>
+    
+    <div class="row">
+      <figure><figcaption>before — the game as it shipped</figcaption><img src="pr-351-shots/before/1280-light-01-landing.png" alt="before" loading="lazy"></figure>
+      <figure><figcaption class="after">after — the illuminated codex</figcaption><img src="pr-351-shots/after/1280-light-01-landing.png" alt="after" loading="lazy"></figure>
     </div>
   </div>
 </main>
